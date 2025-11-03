@@ -1,6 +1,6 @@
 #pragma once
-
 #include <string>
+#include "logger.h"
 
 class URL {
  public:
@@ -12,4 +12,5 @@ class URL {
   std::string m_hostname{};
   std::string m_path{};
   int m_port;
+  Logger* logger;
 };

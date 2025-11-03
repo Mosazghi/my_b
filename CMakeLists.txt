@@ -7,4 +7,9 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(my_b OpenSSL::SSL OpenSSL::Crypto)

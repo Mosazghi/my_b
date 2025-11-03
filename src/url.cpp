@@ -3,39 +3,70 @@
 #include <assert.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring>
 #include <format>
 #include <iostream>
-#include "logging.h"
+#include "logger.h"
+void http_req(Logger* logger, int m_port, const std::string& m_hostname,
+              const std::string& m_path);
+void https_req(Logger* logger, int m_port, const std::string& m_hostname,
+               const std::string& m_path);
 
-// example http://example.org/index.html
-//          |        |           |
-//       scheme     host       path
-URL::URL(std::string const& url) {
-  m_scheme = url.substr(0, url.find("://"));
+URL::URL(const std::string& url) {
+  logger = new Logger("URL");
+  auto sep1 = url.find("://");
+  if (sep1 == std::string::npos) {
+    logger->err("Invalid url! [://]");
+    exit(EXIT_FAILURE);
+  }
+  m_scheme = url.substr(0, sep1);
 
-  assert(m_scheme == "http" && "Scheme not http!");
+  // assert(m_scheme == "http" && "Scheme not http!");
 
-  std::string const rest = url.substr(url.find("://") + 3);
-  m_hostname = rest.substr(0, rest.find("/"));
-  m_path = rest.substr(rest.find("/"));
+  std::string rest = url.substr(sep1 + 3);
 
-  std::cout << "Scheme: " << m_scheme << '\n';
-  std::cout << "Rest: " << rest << '\n';
-  std::cout << "Host: " << m_hostname << '\n';
-  std::cout << "Path: " << m_path << '\n';
-  m_port = 80;
+  if (rest[rest.size() - 1] != '/') {
+    rest.append("/");
+  }
+
+  auto sep2 = rest.find("/");
+  logger->inf(std::format("Rest: {}", rest));
+  if (sep2 == std::string::npos) {
+    logger->err("Invalid url! [/]");
+    exit(EXIT_FAILURE);
+  }
+  // sep2 = "/";
+  m_hostname = rest.substr(0, sep2);
+  m_path = rest.substr(sep2);
+  m_port = m_scheme == "http" ? 80 : 443;
+  logger->inf("Host: {}", m_hostname);
+  logger->inf("Scheme: {}", m_scheme);
+  logger->inf("Port: {}", m_port);
+  logger->inf("Path: {}", m_path);
 }
 
 void URL::request() {
+  if (m_port == 80) {
+    http_req(logger, m_port, m_hostname, m_path);
+  } else {
+    https_req(logger, m_port, m_hostname, m_path);
+  }
+}
+
+void http_req(Logger* logger, int m_port, const std::string& m_hostname,
+              const std::string& m_path) {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (sockfd < 0) {
-    LOG_ERR("Socket creation failed");
+    logger->err("Connection failed!");
     exit(EXIT_FAILURE);
   }
+
   addrinfo hints{};
   hints.ai_family = AF_INET;  // IPv4
   hints.ai_socktype = SOCK_STREAM;
@@ -43,26 +74,116 @@ void URL::request() {
   addrinfo* res;
   if (getaddrinfo(m_hostname.c_str(), std::to_string(m_port).c_str(), &hints,
                   &res) != 0) {
-    LOG_ERR("DNS lookup failed");
+    logger->err("DNS lookup failed");
     exit(EXIT_FAILURE);
   }
 
-  // res->ai_addr is ready to use with connect()
   if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
-    LOG_ERR("Connection failed");
+    logger->err("Connection failed");
     exit(EXIT_FAILURE);
   }
 
   std::string buf = std::format("GET {} HTTP/1.0\r\n", m_path);
   buf.append(std::format("Host: {}\r\n", m_hostname));
   buf.append("\r\n");
-
   send(sockfd, buf.c_str(), buf.size(), 0);
 
   char buffer[1024];
   read(sockfd, buffer, 1024);
-  std::cout << "Message from server: " << buffer << std::endl;
+  logger->inf("Response: \n{}", buffer);
+  // Parsing of response
+  std::string response{buffer};
+  logger->inf("Response: \n{}", response);
+  auto status_line = response.substr(0, response.find_first_of("\r\n"));
+  logger->inf("Status line: {}", status_line);
 
   close(sockfd);
   freeaddrinfo(res);
+}
+void https_req(Logger* logger, int m_port, const std::string& m_hostname,
+               const std::string& m_path) {
+  // OPENSSL --
+  BIO* bio;
+  SSL* ssl;
+  SSL_CTX* ctx;
+
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_all_algorithms();
+
+  ctx = SSL_CTX_new(SSLv23_client_method());
+
+  if (ctx == NULL) {
+    logger->err("SSL CTX is null!");
+    exit(EXIT_FAILURE);
+  }
+
+  bio = BIO_new_ssl_connect(ctx);
+  BIO_set_conn_hostname(
+      bio, std::format("{}:{}", m_hostname, std::to_string(m_port)).c_str());
+
+  if (BIO_do_connect(bio) <= 0) {
+    logger->err("Failed connection");
+    exit(EXIT_FAILURE);
+  } else {
+    logger->inf("BIO connected");
+  }
+
+  std::string write_buf = std::format("GET {} HTTP/1.0\r\n", m_path);
+  write_buf.append(std::format("Host: {}\r\n", m_hostname));
+  write_buf.append("Connection: close\r\n");
+  write_buf.append("\r\n");
+
+  std::cout << "hrllo";
+  if (BIO_write(bio, write_buf.c_str(), strlen(write_buf.c_str())) <= 0) {
+    //
+    //  Handle failed writes here
+    //
+    if (!BIO_should_retry(bio)) {
+      // Not worth implementing, but worth knowing.
+    }
+
+    //
+    //  -> Let us know about the failed writes
+    //
+    printf("Failed write\n");
+  }
+  std::cout << "hrllo2";
+
+  //
+  //  Variables used to read the response from the server
+  //
+  int size;
+  char buf[1024];
+
+  //
+  //  Read the response message
+  //
+  for (;;) {
+    //
+    //  Get chunks of the response 1023 at the time.
+    //
+    size = BIO_read(bio, buf, 1023);
+
+    //
+    //  If no more data, then exit the loop
+    //
+    if (size <= 0) {
+      break;
+    }
+
+    //
+    //  Terminate the string with a 0, to let know C when the string
+    //  ends.
+    //
+    buf[size] = 0;
+
+    //
+    //  ->  Print out the response
+    //
+    printf("%s", buf);
+  }
+  std::cout << "hrllo3";
+  BIO_free_all(bio);
+  SSL_CTX_free(ctx);
 }
