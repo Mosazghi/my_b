@@ -5,7 +5,7 @@
 class URL {
  public:
   URL(std::string const& url);
-  void request();
+  std::string request();
 
  private:
   std::string m_scheme{};

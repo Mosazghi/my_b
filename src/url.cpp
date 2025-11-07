@@ -12,10 +12,10 @@
 #include <format>
 #include <iostream>
 #include "logger.h"
-void http_req(Logger* logger, int m_port, const std::string& m_hostname,
-              const std::string& m_path);
-void https_req(Logger* logger, int m_port, const std::string& m_hostname,
-               const std::string& m_path);
+std::string http_req(Logger* logger, int m_port, const std::string& m_hostname,
+                     const std::string& m_path);
+std::string https_req(Logger* logger, int m_port, const std::string& m_hostname,
+                      const std::string& m_path);
 
 URL::URL(const std::string& url) {
   logger = new Logger("URL");
@@ -35,7 +35,7 @@ URL::URL(const std::string& url) {
   }
 
   auto sep2 = rest.find("/");
-  logger->inf(std::format("Rest: {}", rest));
+  logger->dbg(std::format("Rest: {}", rest));
   if (sep2 == std::string::npos) {
     logger->err("Invalid url! [/]");
     exit(EXIT_FAILURE);
@@ -44,22 +44,22 @@ URL::URL(const std::string& url) {
   m_hostname = rest.substr(0, sep2);
   m_path = rest.substr(sep2);
   m_port = m_scheme == "http" ? 80 : 443;
-  logger->inf("Host: {}", m_hostname);
-  logger->inf("Scheme: {}", m_scheme);
-  logger->inf("Port: {}", m_port);
-  logger->inf("Path: {}", m_path);
+  logger->dbg("Host: {}", m_hostname);
+  logger->dbg("Scheme: {}", m_scheme);
+  logger->dbg("Port: {}", m_port);
+  logger->dbg("Path: {}", m_path);
 }
 
-void URL::request() {
+std::string URL::request() {
   if (m_port == 80) {
-    http_req(logger, m_port, m_hostname, m_path);
+    return http_req(logger, m_port, m_hostname, m_path);
   } else {
-    https_req(logger, m_port, m_hostname, m_path);
+    return https_req(logger, m_port, m_hostname, m_path);
   }
 }
 
-void http_req(Logger* logger, int m_port, const std::string& m_hostname,
-              const std::string& m_path) {
+std::string http_req(Logger* logger, int m_port, const std::string& m_hostname,
+                     const std::string& m_path) {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (sockfd < 0) {
@@ -90,18 +90,19 @@ void http_req(Logger* logger, int m_port, const std::string& m_hostname,
 
   char buffer[1024];
   read(sockfd, buffer, 1024);
-  logger->inf("Response: \n{}", buffer);
+  logger->dbg("Response: \n{}", buffer);
   // Parsing of response
   std::string response{buffer};
-  logger->inf("Response: \n{}", response);
+  // logger->inf("Response: \n{}", response);
   auto status_line = response.substr(0, response.find_first_of("\r\n"));
-  logger->inf("Status line: {}", status_line);
+  // logger->inf("Status line: {}", status_line);
 
   close(sockfd);
   freeaddrinfo(res);
+  return buffer;
 }
-void https_req(Logger* logger, int m_port, const std::string& m_hostname,
-               const std::string& m_path) {
+std::string https_req(Logger* logger, int m_port, const std::string& m_hostname,
+                      const std::string& m_path) {
   // OPENSSL --
   BIO* bio;
   SSL* ssl;
@@ -126,7 +127,7 @@ void https_req(Logger* logger, int m_port, const std::string& m_hostname,
     logger->err("Failed connection");
     exit(EXIT_FAILURE);
   } else {
-    logger->inf("BIO connected");
+    logger->dbg("BIO connected");
   }
 
   std::string write_buf = std::format("GET {} HTTP/1.0\r\n", m_path);
@@ -134,7 +135,6 @@ void https_req(Logger* logger, int m_port, const std::string& m_hostname,
   write_buf.append("Connection: close\r\n");
   write_buf.append("\r\n");
 
-  std::cout << "hrllo";
   if (BIO_write(bio, write_buf.c_str(), strlen(write_buf.c_str())) <= 0) {
     //
     //  Handle failed writes here
@@ -148,7 +148,6 @@ void https_req(Logger* logger, int m_port, const std::string& m_hostname,
     //
     printf("Failed write\n");
   }
-  std::cout << "hrllo2";
 
   //
   //  Variables used to read the response from the server
@@ -181,9 +180,9 @@ void https_req(Logger* logger, int m_port, const std::string& m_hostname,
     //
     //  ->  Print out the response
     //
-    printf("%s", buf);
+    // printf("%s", buf);
   }
-  std::cout << "hrllo3";
   BIO_free_all(bio);
   SSL_CTX_free(ctx);
+  return buf;
 }
