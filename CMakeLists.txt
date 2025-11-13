@@ -1,33 +1,44 @@
 cmake_minimum_required(VERSION 3.15)
 project(my_b LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Debug ON")
+    add_definitions(-DDEBUG=1)
+else ()
+    message(STATUS "Debug off")
+endif()
+
+# Google test
 include(FetchContent)
-
 FetchContent_Declare(
-    SDL3
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG main
+  googletest
+  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
-FetchContent_Declare(
-  SDL3_ttf
-  GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
-  GIT_TAG main
-)
+FetchContent_MakeAvailable(googletest)
 
-FetchContent_MakeAvailable(SDL3)
-FetchContent_MakeAvailable(SDL3_ttf)
-
-# Include directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 
+add_library(my_b_lib ${SOURCES})
+
+enable_testing()
+
+add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(tests tests/test_utilites.cpp)
 
 find_package(OpenSSL REQUIRED)
-target_link_libraries(my_b OpenSSL::SSL OpenSSL::Crypto
-                            SDL3::SDL3
-                            SDL3_ttf::SDL3_ttf)
+
+target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto)
+
+target_link_libraries(my_b my_b_lib GTest::gtest_main)
+target_link_libraries(tests my_b_lib GTest::gtest_main)
+
+include(GoogleTest)
+
+gtest_discover_tests(tests)
