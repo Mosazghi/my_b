@@ -4,14 +4,20 @@
 #include <format>
 #include <iostream>
 
-enum LogLevel { INFO, DBG, ERROR };
+enum LogLevel { INFO, DBG, WARN, ERROR };
 class Logger {
  public:
   Logger(std::string_view name) : m_name(name) {}
   ~Logger() {}
+
   template <typename... Args>
   void err(std::string_view fmt, Args&&... args) {
     base(fmt, LogLevel::ERROR, std::forward<Args>(args)...);
+  }
+
+  template <typename... Args>
+  void warn(std::string_view fmt, Args&&... args) {
+    base(fmt, LogLevel::WARN, std::forward<Args>(args)...);
   }
 
   template <typename... Args>
@@ -45,6 +51,9 @@ class Logger {
     // ANSI color codes
     const char* color = "";
     switch (lvl) {
+      case WARN:
+        color = "\033[35m";
+        break;
       case DBG:
         color = "\033[36m";  // Cyan
         break;
@@ -67,6 +76,7 @@ class Logger {
     switch (lvl) {
       case DBG:
       case ERROR:
+      case WARN:
         std::cerr << formatted;
         break;
       case INFO:
@@ -80,15 +90,14 @@ class Logger {
     switch (lvl) {
       case DBG:
         return "DEBUG";
-        break;
-        return "ERROR";
-        break;
       case INFO:
         return "INFO";
-        break;
+      case ERROR:
+        return "ERROR";
+      case WARN:
+        return "WARNING";
       default:
         return "UNKNOWN";
-        break;
     }
   }
   std::string m_name;

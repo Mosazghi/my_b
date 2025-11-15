@@ -11,9 +11,12 @@
 #include <unistd.h>
 #include <cstring>
 #include <format>
+#include <optional>
 #include <unordered_map>
 #include "logger.h"
 #include "utils.h"
+
+namespace http {
 
 HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
@@ -69,7 +72,10 @@ HttpResponse HttpClient::parse_response(const std::string& response) {
   return {.code = status_line.status, .body = body};
 }
 
-HttpResponse HttpClient::http_req(HttpReqParams params) {
+std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params) {
+  logger->dbg("Host: {}", params.hostname);
+  logger->dbg("Port: {}", params.port);
+  logger->dbg("Path: {}", params.path);
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (sockfd < 0) {
@@ -84,13 +90,13 @@ HttpResponse HttpClient::http_req(HttpReqParams params) {
   addrinfo* res;
   if (getaddrinfo(params.hostname.c_str(), std::to_string(params.port).c_str(),
                   &hints, &res) != 0) {
-    logger->err("DNS lookup failed");
-    exit(EXIT_FAILURE);
+    logger->warn("DNS lookup failed");
+    return std::nullopt;
   }
 
   if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
-    logger->err("Connection failed");
-    exit(EXIT_FAILURE);
+    logger->warn("Connection failed");
+    return std::nullopt;
   }
 
   std::string buf = std::format("GET {} HTTP/1.0\r\n", params.path);
@@ -110,7 +116,10 @@ HttpResponse HttpClient::http_req(HttpReqParams params) {
   return parsed;
 }
 
-HttpResponse HttpClient::https_req(HttpReqParams params) {
+std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params) {
+  logger->dbg("Host: {}", params.hostname);
+  logger->dbg("Port: {}", params.port);
+  logger->dbg("Path: {}", params.port);
   // OPENSSL --
   BIO* bio;
   SSL_CTX* ctx;
@@ -122,8 +131,8 @@ HttpResponse HttpClient::https_req(HttpReqParams params) {
   ctx = SSL_CTX_new(SSLv23_client_method());
 
   if (ctx == NULL) {
-    logger->err("SSL CTX is null!");
-    exit(EXIT_FAILURE);
+    logger->warn("SSL CTX is null!");
+    return std::nullopt;
   }
 
   bio = BIO_new_ssl_connect(ctx);
@@ -132,8 +141,8 @@ HttpResponse HttpClient::https_req(HttpReqParams params) {
                .c_str());
 
   if (BIO_do_connect(bio) <= 0) {
-    logger->err("Failed connection");
-    exit(EXIT_FAILURE);
+    logger->warn("Failed connection");
+    return std::nullopt;
   }
 
   std::string write_buf = std::format("GET {} HTTP/1.0\r\n", params.path);
@@ -173,7 +182,7 @@ HttpResponse HttpClient::https_req(HttpReqParams params) {
     size = BIO_read(bio, buf_, 1023);
 
     //
-    //  If no more data, then exit the loop
+    //  If no more data, then return std::nullopt;
     //
     if (size <= 0) {
       break;
@@ -197,3 +206,5 @@ HttpResponse HttpClient::https_req(HttpReqParams params) {
   auto parsed = parse_response(response);
   return parsed;
 }
+
+}  // namespace http

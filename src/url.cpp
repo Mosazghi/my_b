@@ -11,9 +11,10 @@
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
+#include <optional>
 #include "logger.h"
 
-URL::URL(const std::string& url, std::shared_ptr<HttpClient> http_client)
+URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client)
     : m_http_client{http_client} {
   logger = new Logger("URL");
   auto sep1 = url.find("://");
@@ -54,17 +55,12 @@ URL::URL(const std::string& url, std::shared_ptr<HttpClient> http_client)
     // FIXME: What if shceme is file or other?
     m_port = m_scheme == HttpScheme::HTTP ? 80 : 443;
   }
-
-  logger->dbg("Host: {}", m_hostname);
-  logger->dbg("Scheme: {}", scheme);
-  logger->dbg("Port: {}", m_port);
-  logger->dbg("Path: {}", m_path);
 }
 
 URL::~URL() {}
 
-HttpResponse URL::request() {
-  HttpResponse resp{};
+http::HttpResponse URL::request() {
+  std::optional<http::HttpResponse> resp{};
   switch (m_scheme) {
     case HttpScheme::HTTP:
       resp = m_http_client->http_req({m_port, m_hostname, m_path});
@@ -75,13 +71,12 @@ HttpResponse URL::request() {
     default:
       break;
   }
-  return resp;
+  return resp.value_or(http::HttpResponse{});
 }
 
 void URL::show(const std::string& body) {
   bool in_tag{false};
 
-  logger->dbg("Showing...");
   for (const auto& c : body) {
     if (c == '<') {
       in_tag = true;
@@ -91,5 +86,4 @@ void URL::show(const std::string& body) {
       std::cout << c;
     }
   }
-  logger->dbg("Finished showing");
 }

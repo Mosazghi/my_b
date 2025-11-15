@@ -3,12 +3,6 @@ project(my_b LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "Debug ON")
-    add_definitions(-DDEBUG=1)
-else ()
-    message(STATUS "Debug off")
-endif()
 
 # Google test
 include(FetchContent)
@@ -21,6 +15,8 @@ FetchContent_MakeAvailable(googletest)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+file(GLOB TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*.cpp")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
@@ -30,7 +26,14 @@ add_library(my_b_lib ${SOURCES})
 enable_testing()
 
 add_executable(${PROJECT_NAME} src/main.cpp)
-add_executable(tests tests/test_utilites.cpp)
+add_executable(tests ${TEST_SOURCES})
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Debug ON")
+    target_compile_definitions(my_b PRIVATE DEBUG=1)
+else ()
+    message(STATUS "Debug off")
+endif()
 
 find_package(OpenSSL REQUIRED)
 

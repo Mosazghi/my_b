@@ -8,9 +8,9 @@ enum class HttpScheme { HTTP, HTTPS };
 
 class URL {
  public:
-  URL(std::string const& url, std::shared_ptr<HttpClient> http_client);
+  URL(std::string const& url, std::shared_ptr<http::HttpClient> http_client);
   ~URL();
-  HttpResponse request();
+  http::HttpResponse request();
   void show(const std::string& body);
 
  private:
@@ -19,5 +19,5 @@ class URL {
   std::string m_path{};
   int m_port;
   Logger* logger;
-  std::shared_ptr<HttpClient> m_http_client;
+  std::shared_ptr<http::HttpClient> m_http_client;
 };

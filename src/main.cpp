@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
   }
 
   std::string addr = argv[1];
-  auto http_client = std::make_shared<HttpClient>();
+  auto http_client = std::make_shared<http::HttpClient>();
   URL url(addr, http_client);
   auto response = url.request();
   url.show(response.body);
