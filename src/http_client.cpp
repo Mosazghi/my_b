@@ -106,7 +106,11 @@ std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params) {
   send(sockfd, buf.c_str(), buf.size(), 0);
 
   char buffer[1024];
-  read(sockfd, buffer, 1024);
+  int size = read(sockfd, buffer, 1024);
+  if (size == -1) {
+    logger->warn("Encountered Err");
+    return std::nullopt;
+  }
 
   std::string response{buffer};
   auto parsed = parse_response(response);

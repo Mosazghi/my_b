@@ -1,0 +1,24 @@
+name: Run tests
+
+on:
+  push:
+
+jobs:
+  build:
+    name: Build on Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate Cmake
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build Cmake
+        run: |
+          cmake --build build
+      - name: Run tests
+        run: |
+          ctest --test-dir build
