@@ -14,6 +14,7 @@
 #include <optional>
 #include <unordered_map>
 #include "logger.h"
+#include "url.h"
 #include "utils.h"
 
 namespace http {
@@ -21,6 +22,35 @@ namespace http {
 HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
 HttpClient::~HttpClient() {}
+
+std::optional<HttpResponse> HttpClient::get(HttpReqParams params) {
+  std::optional<http::HttpResponse> resp{};
+
+  logger->dbg("Host: {}", params.hostname);
+  logger->dbg("Port: {}", params.port);
+  logger->dbg("Path: {}", params.path);
+  logger->dbg("Scheme: {}",
+              params.scheme == url::Scheme::HTTP ? "HTTP" : "HTTPS");
+
+  std::string buffer = std::format("GET {} HTTP/1.0\r\n", params.path);
+  buffer.append(std::format("Host: {}\r\n", params.hostname));
+  buffer.append("User-Agent: mosa\r\n");
+  buffer.append("Connection: close\r\n");
+  buffer.append("\r\n");
+
+  switch (params.scheme) {
+    case url::Scheme::HTTP:
+      resp = http_req(params, buffer);
+      break;
+    case url::Scheme::HTTPS:
+      resp = https_req(params, buffer);
+      break;
+    default:
+      break;
+  }
+
+  return resp;
+}
 
 HttpResponse HttpClient::parse_response(const std::string& response) {
   if (response.empty()) {
@@ -72,10 +102,8 @@ HttpResponse HttpClient::parse_response(const std::string& response) {
   return {.code = status_line.status, .body = body};
 }
 
-std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params) {
-  logger->dbg("Host: {}", params.hostname);
-  logger->dbg("Port: {}", params.port);
-  logger->dbg("Path: {}", params.path);
+std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
+                                                 const std::string& buffer) {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (sockfd < 0) {
@@ -99,20 +127,16 @@ std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params) {
     return std::nullopt;
   }
 
-  std::string buf = std::format("GET {} HTTP/1.0\r\n", params.path);
-  buf.append(std::format("Host: {}\r\n", params.hostname));
-  buf.append("\r\n");
-  logger->inf("Sending:\n{}", buf);
-  send(sockfd, buf.c_str(), buf.size(), 0);
+  send(sockfd, buffer.c_str(), buffer.size(), 0);
 
-  char buffer[1024];
-  int size = read(sockfd, buffer, 1024);
+  char recv_buf[1024];
+  int size = read(sockfd, recv_buf, 1024);
   if (size == -1) {
     logger->warn("Encountered Err");
     return std::nullopt;
   }
 
-  std::string response{buffer};
+  std::string response{recv_buf};
   auto parsed = parse_response(response);
 
   close(sockfd);
@@ -120,10 +144,8 @@ std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params) {
   return parsed;
 }
 
-std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params) {
-  logger->dbg("Host: {}", params.hostname);
-  logger->dbg("Port: {}", params.port);
-  logger->dbg("Path: {}", params.port);
+std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
+                                                  const std::string& buffer) {
   // OPENSSL --
   BIO* bio;
   SSL_CTX* ctx;
@@ -149,12 +171,7 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params) {
     return std::nullopt;
   }
 
-  std::string write_buf = std::format("GET {} HTTP/1.0\r\n", params.path);
-  write_buf.append(std::format("Host: {}\r\n", params.hostname));
-  write_buf.append("Connection: close\r\n");
-  write_buf.append("\r\n");
-
-  if (BIO_write(bio, write_buf.c_str(), strlen(write_buf.c_str())) <= 0) {
+  if (BIO_write(bio, buffer.c_str(), strlen(buffer.c_str())) <= 0) {
     //
     //  Handle failed writes here
     //

@@ -13,7 +13,9 @@
 #include <iostream>
 #include <optional>
 #include "logger.h"
+namespace url {
 
+// TODO: Improve parsing
 URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client)
     : m_http_client{http_client} {
   logger = new Logger("URL");
@@ -23,12 +25,13 @@ URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client)
     exit(EXIT_FAILURE);
   }
   std::string scheme = url.substr(0, sep1);
+
   if (scheme == "http") {
-    m_scheme = HttpScheme::HTTP;
+    m_scheme = Scheme::HTTP;
   } else if (scheme == "https") {
-    m_scheme = HttpScheme::HTTPS;
+    m_scheme = Scheme::HTTPS;
   } else {
-    // logger->err("Other schemes are not yet supported!");
+    logger->err("Other schemes are not yet supported!");
   }
 
   std::string rest = url.substr(sep1 + 3);
@@ -53,7 +56,7 @@ URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client)
     m_hostname = m_hostname.substr(0, c_port);
   } else {
     // FIXME: What if shceme is file or other?
-    m_port = m_scheme == HttpScheme::HTTP ? 80 : 443;
+    m_port = m_scheme == Scheme::HTTP ? 80 : 443;
   }
 }
 
@@ -62,11 +65,9 @@ URL::~URL() {}
 http::HttpResponse URL::request() {
   std::optional<http::HttpResponse> resp{};
   switch (m_scheme) {
-    case HttpScheme::HTTP:
-      resp = m_http_client->http_req({m_port, m_hostname, m_path});
-      break;
-    case HttpScheme::HTTPS:
-      resp = m_http_client->https_req({m_port, m_hostname, m_path});
+    case Scheme::HTTP:
+    case Scheme::HTTPS:
+      resp = m_http_client->get({m_port, m_hostname, m_path, m_scheme});
       break;
     default:
       break;
@@ -87,3 +88,4 @@ void URL::show(const std::string& body) {
     }
   }
 }
+}  // namespace url
