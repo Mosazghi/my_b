@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 // #include "http_client.h"
+#include "file.h"
 #include "logger.h"
 
 // Forward declarations
@@ -16,13 +17,15 @@ enum class Scheme {
   UNKNOWN,  //< Unsupported.
   HTTP,
   HTTPS,
+  FILE,
 };
 
 class URL {
  public:
-  URL(std::string const& url, std::shared_ptr<http::HttpClient> http_client);
+  URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client,
+      std::shared_ptr<file::File> file_client);
   ~URL();
-  http::HttpResponse request();
+  std::optional<http::HttpResponse> request();
   void show(const std::string& body);
 
  private:
@@ -32,5 +35,6 @@ class URL {
   int m_port;
   Logger* logger;
   std::shared_ptr<http::HttpClient> m_http_client;
+  std::shared_ptr<file::File> m_file_client;
 };
 }  // namespace url

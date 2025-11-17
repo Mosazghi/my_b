@@ -7,6 +7,7 @@
 
 static Logger* logger = new Logger("main");
 int main(int argc, char* argv[]) {
+  std::cout << "Init.";
   logger->inf("Initializing...");
   if (argc < 2) {
     std::cout << "Usage: " << argv[0] << " <url>\n";
@@ -15,9 +16,13 @@ int main(int argc, char* argv[]) {
 
   std::string addr = argv[1];
   auto http_client = std::make_shared<http::HttpClient>();
-  url::URL url(addr, http_client);
+  auto file_client = std::make_shared<file::File>();
+  url::URL url(addr, http_client, file_client);
   auto response = url.request();
-  url.show(response.body);
+  if (response) {
+    logger->inf("Body {}", response->body);
+    url.show(response->body);
+  }
 
   return 0;
 }
