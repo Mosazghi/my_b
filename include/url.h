@@ -18,6 +18,7 @@ enum class Scheme {
   HTTP,
   HTTPS,
   FILE,
+  DATA,
 };
 
 class URL {
@@ -29,15 +30,23 @@ class URL {
   void show(const std::string& body);
 
  private:
-  struct Data {
+  struct Url {
     Scheme scheme;
     std::string host;
     std::optional<int> port;
     std::string path;
+    // TODO: Refactor
+    struct DataScheme {
+      std::string protocol;
+      std::string data;
+    } data_scheme;
   } m_data;
 
   Logger* logger;
   std::shared_ptr<http::HttpClient> m_http_client;
   std::shared_ptr<file::File> m_file_client;
+
+  bool is_scheme_in(Scheme scheme);
+  bool is_scheme_in(const std::vector<Scheme>& schemes);
 };
 }  // namespace url

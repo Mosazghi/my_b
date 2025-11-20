@@ -13,6 +13,9 @@ int main(int argc, char* argv[]) {
     std::cout << "Usage: " << argv[0] << " <url>\n";
     return 1;
   }
+  for (int i = 1; i < argc; i++) {
+    std::cout << argv[i] << '\n';
+  }
 
   std::string addr = argv[1];
   auto http_client = std::make_shared<http::HttpClient>();

@@ -23,10 +23,6 @@ URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client,
 
   auto s1 = url.find("://");
 
-  if (s1 == std::string::npos) {
-    logger->err("Invalid url! [://] (scheme)");
-    exit(EXIT_FAILURE);
-  }
   std::string scheme = url.substr(0, s1);
 
   if (scheme == "http") {
@@ -36,34 +32,48 @@ URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client,
   } else if (scheme == "file") {
     m_data.scheme = Scheme::FILE;
   } else {
-    logger->err("Other schemes are not yet supported!");
+    // Check if it's 'data' scheme
+    auto s = url.find(":");
+    if (s != std::string::npos) {
+      auto scheme = url.substr(0, s);
+      if (scheme == "data") {
+        m_data.scheme = Scheme::DATA;
+      }
+    }
   }
 
   std::string rest = url.substr(s1 + 3);
 
-  if (m_data.scheme == Scheme::FILE) {
+  if (is_scheme_in(Scheme::FILE)) {
     m_data.path = rest;
-  } else {
+  } else if (is_scheme_in({Scheme::HTTP, Scheme::HTTPS})) {
     auto s2 = rest.find("/");
 
     if (s2 == std::string::npos) {
       m_data.path = "/";
-      m_hostname = url.substr(s1 + 3);
+      m_data.host = url.substr(s1 + 3);
     } else {
-      m_hostname = rest.substr(0, s2);
+      m_data.host = rest.substr(0, s2);
       m_data.path = rest.substr(s2);
     }
 
     // Custom port
-    auto c_port = m_hostname.find_first_of(":");
+    auto c_port = m_data.host.find_first_of(":");
     if (c_port != std::string::npos) {
-      m_data.port = std::stoi(m_hostname.substr(c_port + 1));
-      m_hostname = m_hostname.substr(0, c_port);
+      m_data.port = std::stoi(m_data.host.substr(c_port + 1));
+      m_data.host = m_data.host.substr(0, c_port);
     } else {
       m_data.port = m_data.scheme == Scheme::HTTP ? 80 : 443;
     }
+  } else if (is_scheme_in(Scheme::DATA)) {
+    auto s1 = url.find(":");
+    auto rest = url.substr(s1 + 1);
+    auto s2 = rest.find(",");
+    m_data.data_scheme.protocol = rest.substr(0, s2);
+    m_data.data_scheme.data = rest.substr(s2 + 1);
+    logger->dbg("DATA SCHEME: {} ({}) :::: {},  {}", url, rest,
+                m_data.data_scheme.protocol, m_data.data_scheme.data);
   }
-  logger->inf("Url init done");
 }
 
 URL::~URL() {}
@@ -76,7 +86,7 @@ std::optional<http::HttpResponse> URL::request() {
     case Scheme::HTTPS:
       logger->inf("HTTP REQ");
       resp = m_http_client->get(
-          {m_data.port.value(), m_hostname, m_data.path, m_data.scheme});
+          {m_data.port.value(), m_data.host, m_data.path, m_data.scheme});
       break;
     case Scheme::FILE: {
       logger->inf("FILE REQ");
@@ -106,5 +116,16 @@ void URL::show(const std::string& body) {
       std::cout << c;
     }
   }
+}
+
+bool URL::is_scheme_in(Scheme s) { return m_data.scheme == s; }
+
+bool URL::is_scheme_in(const std::vector<Scheme>& ss) {
+  for (const auto& s : ss) {
+    if (m_data.scheme == s) {
+      return true;
+    }
+  }
+  return false;
 }
 }  // namespace url
