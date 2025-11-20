@@ -29,10 +29,13 @@ class URL {
   void show(const std::string& body);
 
  private:
-  Scheme m_scheme{};
-  std::string m_hostname{};
-  std::string m_path{};
-  int m_port;
+  struct Data {
+    Scheme scheme;
+    std::string host;
+    std::optional<int> port;
+    std::string path;
+  } m_data;
+
   Logger* logger;
   std::shared_ptr<http::HttpClient> m_http_client;
   std::shared_ptr<file::File> m_file_client;

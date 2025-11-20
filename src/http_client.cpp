@@ -24,6 +24,7 @@ HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 HttpClient::~HttpClient() {}
 
 std::optional<HttpResponse> HttpClient::get(HttpReqParams params) {
+  logger->inf("Hello");
   std::optional<http::HttpResponse> resp{};
 
   logger->dbg("Host: {}", params.hostname);
@@ -37,6 +38,8 @@ std::optional<HttpResponse> HttpClient::get(HttpReqParams params) {
   buffer.append("User-Agent: mosa\r\n");
   buffer.append("Connection: close\r\n");
   buffer.append("\r\n");
+
+  logger->dbg("Sending:\n{}", buffer);
 
   switch (params.scheme) {
     case url::Scheme::HTTP:
@@ -78,8 +81,8 @@ HttpResponse HttpClient::parse_response(const std::string& response) {
       }
       status_line.explaination = stats_split.at(2);
 
-      logger->dbg("Status Line: {}, {}, {}", status_line.status,
-                  status_line.version, status_line.explaination);
+      logger->dbg("{}, {} {}", status_line.version, status_line.status,
+                  status_line.explaination);
     } else {
       auto split_idx = line.find_first_of(":");
       if (split_idx != std::string::npos && !body_found) {
@@ -93,7 +96,8 @@ HttpResponse HttpClient::parse_response(const std::string& response) {
         headers[key] = val;
         logger->dbg("{} - {}", key, val);
       } else {
-        body.append(line);
+        utils::trim(line);
+        body.append(line + "\n");
         body_found = true;
       }
     }

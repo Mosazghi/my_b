@@ -3,6 +3,7 @@
 #include <cstdarg>
 #include <format>
 #include <iostream>
+#define DEBUG
 
 enum LogLevel { INFO, DBG, WARN, ERROR };
 class Logger {

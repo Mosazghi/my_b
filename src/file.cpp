@@ -21,7 +21,7 @@ std::optional<std::string> File::read(const std::string& path) {
   std::string buffer;
 
   while (std::getline(file, line)) {
-    buffer.append(line);
+    buffer.append(line + "\n");
   }
 
   file.close();

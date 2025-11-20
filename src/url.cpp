@@ -20,49 +20,47 @@ URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client,
          std::shared_ptr<file::File> file_client)
     : m_http_client{http_client}, m_file_client(file_client) {
   logger = new Logger("URL");
-  auto sep1 = url.find("://");
-  if (sep1 == std::string::npos) {
-    logger->err("Invalid url! [://]");
+
+  auto s1 = url.find("://");
+
+  if (s1 == std::string::npos) {
+    logger->err("Invalid url! [://] (scheme)");
     exit(EXIT_FAILURE);
   }
-  std::string scheme = url.substr(0, sep1);
+  std::string scheme = url.substr(0, s1);
 
   if (scheme == "http") {
-    m_scheme = Scheme::HTTP;
+    m_data.scheme = Scheme::HTTP;
   } else if (scheme == "https") {
-    m_scheme = Scheme::HTTPS;
+    m_data.scheme = Scheme::HTTPS;
   } else if (scheme == "file") {
-    m_scheme = Scheme::FILE;
+    m_data.scheme = Scheme::FILE;
   } else {
     logger->err("Other schemes are not yet supported!");
   }
 
-  std::string rest = url.substr(sep1 + 3);
+  std::string rest = url.substr(s1 + 3);
 
-  if (m_scheme == Scheme::FILE) {
-    m_path = rest;
+  if (m_data.scheme == Scheme::FILE) {
+    m_data.path = rest;
   } else {
-    if (rest[rest.size() - 1] != '/') {
-      rest.append("/");
+    auto s2 = rest.find("/");
+
+    if (s2 == std::string::npos) {
+      m_data.path = "/";
+      m_hostname = url.substr(s1 + 3);
+    } else {
+      m_hostname = rest.substr(0, s2);
+      m_data.path = rest.substr(s2);
     }
 
-    auto sep2 = rest.find("/");
-
-    if (sep2 == std::string::npos) {
-      logger->err("Invalid url! [/]");
-      exit(EXIT_FAILURE);
-    }
-
-    m_hostname = rest.substr(0, sep2);
-    m_path = rest.substr(sep2);
     // Custom port
     auto c_port = m_hostname.find_first_of(":");
     if (c_port != std::string::npos) {
-      m_port = std::stoi(m_hostname.substr(c_port + 1));
+      m_data.port = std::stoi(m_hostname.substr(c_port + 1));
       m_hostname = m_hostname.substr(0, c_port);
     } else {
-      // FIXME: What if shceme is file or other?
-      m_port = m_scheme == Scheme::HTTP ? 80 : 443;
+      m_data.port = m_data.scheme == Scheme::HTTP ? 80 : 443;
     }
   }
   logger->inf("Url init done");
@@ -71,17 +69,18 @@ URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client,
 URL::~URL() {}
 
 std::optional<http::HttpResponse> URL::request() {
-  logger->inf("Requesting...");
-
   std::optional<http::HttpResponse> resp{};
 
-  switch (m_scheme) {
+  switch (m_data.scheme) {
     case Scheme::HTTP:
     case Scheme::HTTPS:
-      resp = m_http_client->get({m_port, m_hostname, m_path, m_scheme});
+      logger->inf("HTTP REQ");
+      resp = m_http_client->get(
+          {m_data.port.value(), m_hostname, m_data.path, m_data.scheme});
       break;
     case Scheme::FILE: {
-      auto file = m_file_client->read(m_path);
+      logger->inf("FILE REQ");
+      auto file = m_file_client->read(m_data.path);
       if (file.has_value()) {
         resp = http::HttpResponse{.code = 200, .body = file.value()};
       } else {
@@ -96,12 +95,12 @@ std::optional<http::HttpResponse> URL::request() {
 }
 
 void URL::show(const std::string& body) {
-  // logger->inf("Raw print:\n {}", body);
   bool in_tag{false};
 
   for (const auto& c : body) {
     if (c == '<') {
       in_tag = true;
+    } else if (c == '>') {
       in_tag = false;
     } else if (!in_tag) {
       std::cout << c;

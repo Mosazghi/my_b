@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   url::URL url(addr, http_client, file_client);
   auto response = url.request();
   if (response) {
-    logger->inf("Body {}", response->body);
+    // logger->inf("Body {}", response->body);
     url.show(response->body);
   }
 

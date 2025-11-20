@@ -14,38 +14,38 @@ class HttpTest : public ::testing::Test {
 };
 
 TEST_F(HttpTest, GetReqSuccess) {
-  auto response = m_http_client->get({
+  auto resp = m_http_client->get({
       .port = 80,
       .hostname = "httpforever.com",
       .path = "/",
       .scheme = url::Scheme::HTTP,
   });
 
-  EXPECT_TRUE(response.has_value());
-  EXPECT_NE(response->body, "");
-  EXPECT_EQ(response->code, 200);
+  EXPECT_TRUE(resp.has_value());
+  EXPECT_NE(resp->body, "");
+  EXPECT_EQ(resp->code, 200);
 }
 
 TEST_F(HttpTest, GetReq404Failure) {
-  auto response = m_http_client->get({
+  auto resp = m_http_client->get({
       .port = 80,
       .hostname = "httpforeverr.com",
       .path = "/",
       .scheme = url::Scheme::HTTP,
   });
 
-  EXPECT_FALSE(response.has_value());
+  EXPECT_FALSE(resp.has_value());
 }
 
 TEST_F(HttpTest, GetReqSuccessHttps) {
-  auto response = m_http_client->get({
+  auto resp = m_http_client->get({
       .port = 443,
       .hostname = "portfolio.mostes.no",
       .path = "/",
       .scheme = url::Scheme::HTTPS,
   });
 
-  EXPECT_TRUE(response.has_value());
-  EXPECT_NE(response->body, "");
-  EXPECT_EQ(response->code, 200);
+  EXPECT_TRUE(resp.has_value());
+  EXPECT_NE(resp->body, "");
+  EXPECT_EQ(resp->code, 200);
 }
