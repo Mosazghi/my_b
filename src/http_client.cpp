@@ -24,7 +24,6 @@ HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 HttpClient::~HttpClient() {}
 
 std::optional<HttpResponse> HttpClient::get(HttpReqParams params) {
-  logger->inf("Hello");
   std::optional<http::HttpResponse> resp{};
 
   logger->dbg("Host: {}", params.hostname);
