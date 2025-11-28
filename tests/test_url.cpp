@@ -1,9 +1,7 @@
-
-
 #include <gtest/gtest.h>
-#include "file.h"
-#include "http_client.h"
-#include "url.h"
+#include "file/File.h"
+#include "http/HttpClient.h"
+#include "url/Url.h"
 
 class UrlTest : public ::testing::Test {
  protected:

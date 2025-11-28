@@ -3,8 +3,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "http_client.h"
-#include "url.h"
+#include "http/HttpClient.h"
+#include "url/Url.h"
 
 static Logger* logger = new Logger("main");
 

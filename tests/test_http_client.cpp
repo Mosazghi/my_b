@@ -1,6 +1,7 @@
 
 #include <gtest/gtest.h>
-#include "http_client.h"
+#include "http/HttpClient.h"
+#include "http/Types.h"
 
 class HttpTest : public ::testing::Test {
  protected:

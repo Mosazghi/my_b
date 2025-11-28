@@ -12,7 +12,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 file(GLOB TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*.cpp")

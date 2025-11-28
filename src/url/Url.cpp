@@ -1,7 +1,8 @@
-#include "url.h"
+#include "url/Url.h"
 #include <arpa/inet.h>
 #include <assert.h>
-#include <http_client.h>
+#include <http/HttpClient.h>
+#include <http/IHttpClient.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -16,7 +17,7 @@
 namespace url {
 
 // TODO: Improve parsing
-URL::URL(const std::string& url, std::shared_ptr<http::HttpClient> http_client,
+URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client,
          std::shared_ptr<file::File> file_client)
     : m_http_client{http_client}, m_file_client(file_client) {
   logger = new Logger("URL");
@@ -85,8 +86,8 @@ std::optional<http::HttpResponse> URL::request() {
     case Scheme::HTTP:
     case Scheme::HTTPS:
       logger->inf("HTTP REQ");
-      resp = m_http_client->get(
-          {m_data.port.value(), m_data.host, m_data.path, m_data.scheme});
+      resp = m_http_client->get(http::HttpReqParams{
+          m_data.port.value(), m_data.host, m_data.path, m_data.scheme});
       break;
     case Scheme::FILE: {
       logger->inf("FILE REQ");

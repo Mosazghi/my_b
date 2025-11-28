@@ -1,7 +1,7 @@
-#include "http_client.h"
+#include "HttpClient.h"
 #include <arpa/inet.h>
 #include <assert.h>
-#include <http_client.h>
+#include <http/HttpClient.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -13,8 +13,9 @@
 #include <format>
 #include <optional>
 #include <unordered_map>
+#include "Types.h"
 #include "logger.h"
-#include "url.h"
+#include "url/Url.h"
 #include "utils.h"
 
 namespace http {
@@ -23,7 +24,7 @@ HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
 HttpClient::~HttpClient() {}
 
-std::optional<HttpResponse> HttpClient::get(HttpReqParams params) {
+std::optional<HttpResponse> HttpClient::get(HttpReqParams params) const {
   std::optional<http::HttpResponse> resp{};
 
   logger->dbg("Host: {}", params.hostname);
@@ -54,7 +55,7 @@ std::optional<HttpResponse> HttpClient::get(HttpReqParams params) {
   return resp;
 }
 
-HttpResponse HttpClient::parse_response(const std::string& response) {
+HttpResponse HttpClient::parse_response(const std::string& response) const {
   if (response.empty()) {
     return {.code = 404, .body = response};
   }
@@ -105,8 +106,8 @@ HttpResponse HttpClient::parse_response(const std::string& response) {
   return {.code = status_line.status, .body = body};
 }
 
-std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
-                                                 const std::string& buffer) {
+std::optional<HttpResponse> HttpClient::http_req(
+    HttpReqParams params, const std::string& buffer) const {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (sockfd < 0) {
@@ -147,8 +148,8 @@ std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
   return parsed;
 }
 
-std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
-                                                  const std::string& buffer) {
+std::optional<HttpResponse> HttpClient::https_req(
+    HttpReqParams params, const std::string& buffer) const {
   // OPENSSL --
   BIO* bio;
   SSL_CTX* ctx;
