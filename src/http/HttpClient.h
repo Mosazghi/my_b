@@ -13,16 +13,18 @@ class HttpClient : public IHttpClient {
   HttpClient();
   ~HttpClient();
 
-  std::optional<HttpResponse> get(HttpReqParams params) const override;
+  std::optional<HttpResponse> get(const std::string& url) const override;
 
  private:
-  HttpResponse parse_response(const std::string& response) const;
+  HttpResponse get_response_from_body(const std::string& response) const;
 
   std::optional<HttpResponse> http_req(HttpReqParams params,
                                        const std::string& buffer) const;
   std::optional<HttpResponse> https_req(HttpReqParams params,
                                         const std::string& buffer) const;
 
+  std::optional<http::HttpReqParams> get_params_from_url(
+      const std::string& url) const;
   Logger* logger;
 };
 

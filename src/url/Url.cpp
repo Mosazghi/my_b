@@ -15,17 +15,21 @@
 #include <optional>
 #include "file/File.h"
 #include "logger.h"
+#include "utils.h"
+
 namespace url {
 
-// TODO: Improve parsing
 URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client)
-    : m_http_client{http_client} {
+    : m_http_client{http_client}, m_url{url} {
   logger = new Logger("URL");
+  // Trim url
+  utils::trim(m_url);
 
-  auto s1 = url.find("://");
+  auto s1 = m_url.find("://");
 
-  std::string scheme = url.substr(0, s1);
+  std::string scheme = m_url.substr(0, s1);
 
+  // Parse potential schemes
   if (scheme == "http") {
     m_data.scheme = Scheme::HTTP;
   } else if (scheme == "https") {
@@ -33,51 +37,36 @@ URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client)
   } else if (scheme == "file") {
     m_data.scheme = Scheme::FILE;
   } else {
-    // Check if it's 'data' scheme
-    auto s = url.find(":");
+    auto s = m_url.find(":");
     if (s != std::string::npos) {
-      auto scheme = url.substr(0, s);
+      auto scheme = m_url.substr(0, s);
       if (scheme == "data") {
         m_data.scheme = Scheme::DATA;
       }
     }
   }
 
-  std::string rest = url.substr(s1 + 3);
+  std::string rest = m_url.substr(s1 + 3);
 
   if (is_scheme_in(Scheme::FILE)) {
-    m_data.path = rest;
-  } else if (is_scheme_in({Scheme::HTTP, Scheme::HTTPS})) {
-    auto s2 = rest.find("/");
+    m_url = rest;
+  }
 
-    if (s2 == std::string::npos) {
-      m_data.path = "/";
-      m_data.host = url.substr(s1 + 3);
-    } else {
-      m_data.host = rest.substr(0, s2);
-      m_data.path = rest.substr(s2);
-    }
-
-    // Custom port
-    auto c_port = m_data.host.find_first_of(":");
-    if (c_port != std::string::npos) {
-      m_data.port = std::stoi(m_data.host.substr(c_port + 1));
-      m_data.host = m_data.host.substr(0, c_port);
-    } else {
-      m_data.port = m_data.scheme == Scheme::HTTP ? 80 : 443;
-    }
-  } else if (is_scheme_in(Scheme::DATA)) {
-    auto s1 = url.find(":");
-    auto rest = url.substr(s1 + 1);
+  if (is_scheme_in(Scheme::DATA)) {
+    auto s1 = m_url.find(":");
+    auto rest = m_url.substr(s1 + 1);
     auto s2 = rest.find(",");
     m_data.data_scheme.protocol = rest.substr(0, s2);
     m_data.data_scheme.data = rest.substr(s2 + 1);
-    logger->dbg("DATA SCHEME: {} ({}) :::: {},  {}", url, rest,
+    logger->dbg("DATA SCHEME: {} ({}) :::: {},  {}", m_url, rest,
                 m_data.data_scheme.protocol, m_data.data_scheme.data);
   }
 }
 
-URL::~URL() {}
+URL::~URL() {
+  logger = nullptr;
+  delete logger;
+}
 
 std::optional<http::HttpResponse> URL::request() {
   std::optional<http::HttpResponse> resp{};
@@ -85,20 +74,19 @@ std::optional<http::HttpResponse> URL::request() {
   switch (m_data.scheme) {
     case Scheme::HTTP:
     case Scheme::HTTPS:
-      logger->inf("HTTP REQ");
-      resp = m_http_client->get(http::HttpReqParams{
-          m_data.port.value(), m_data.host, m_data.path, m_data.scheme});
+      resp = m_http_client->get(m_url);
       break;
     case Scheme::FILE: {
-      logger->inf("FILE REQ");
-      auto file = file::read(m_data.path);
+      auto file = file::read(m_url);
       if (file.has_value()) {
         resp = http::HttpResponse{.code = 200, .body = file.value()};
       } else {
-        resp = http::HttpResponse{.code = 404, .body = "File not found"};
+        resp = http::HttpResponse{.code = 404, .body = "File not found\n"};
       }
       break;
     }
+    case Scheme::DATA:
+      // TODO: !
     default:
       break;
   }

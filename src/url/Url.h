@@ -35,6 +35,8 @@ class URL : public IUrl {
     } data_scheme;
   } m_data;
 
+  std::string m_url{};
+
   Logger* logger;
   std::shared_ptr<http::IHttpClient> m_http_client;
 

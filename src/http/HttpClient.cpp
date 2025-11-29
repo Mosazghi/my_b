@@ -24,38 +24,39 @@ HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
 HttpClient::~HttpClient() {}
 
-std::optional<HttpResponse> HttpClient::get(HttpReqParams params) const {
+std::optional<HttpResponse> HttpClient::get(const std::string& url) const {
   std::optional<http::HttpResponse> resp{};
+  auto params = get_params_from_url(url);
 
-  logger->dbg("Host: {}", params.hostname);
-  logger->dbg("Port: {}", params.port);
-  logger->dbg("Path: {}", params.path);
-  logger->dbg("Scheme: {}",
-              params.scheme == url::Scheme::HTTP ? "HTTP" : "HTTPS");
+  if (!params.has_value()) {
+    return {};
+  }
 
-  std::string buffer = std::format("GET {} HTTP/1.0\r\n", params.path);
-  buffer.append(std::format("Host: {}\r\n", params.hostname));
+  std::string buffer = std::format("GET {} HTTP/1.0\r\n", params.value().path);
+  buffer.append(std::format("Host: {}\r\n", params.value().hostname));
   buffer.append("User-Agent: mosa\r\n");
   buffer.append("Connection: close\r\n");
   buffer.append("\r\n");
 
   logger->dbg("Sending:\n{}", buffer);
 
-  switch (params.scheme) {
+  switch (params.value().scheme) {
     case url::Scheme::HTTP:
-      resp = http_req(params, buffer);
+      resp = http_req(params.value(), buffer);
       break;
     case url::Scheme::HTTPS:
-      resp = https_req(params, buffer);
+      resp = https_req(params.value(), buffer);
       break;
     default:
+      logger->err("Unknown scheme");
       break;
   }
 
   return resp;
 }
 
-HttpResponse HttpClient::parse_response(const std::string& response) const {
+HttpResponse HttpClient::get_response_from_body(
+    const std::string& response) const {
   if (response.empty()) {
     return {.code = 404, .body = response};
   }
@@ -106,6 +107,50 @@ HttpResponse HttpClient::parse_response(const std::string& response) const {
   return {.code = status_line.status, .body = body};
 }
 
+std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
+    const std::string& url) const {
+  http::HttpReqParams params{};
+  auto s1 = url.find("://");
+  std::string scheme = url.substr(0, s1);
+
+  std::string rest = url.substr(s1 + 3);
+
+  auto s2 = rest.find("/");
+
+  if (scheme == "http") {
+    params.scheme = url::Scheme::HTTP;
+  } else if (scheme == "https") {
+    params.scheme = url::Scheme::HTTPS;
+  } else {
+    logger->warn("Unknwon scheme");
+    return {};
+  }
+
+  if (s2 == std::string::npos) {
+    params.path = "/";
+    params.hostname = url.substr(s1 + 3);
+  } else {
+    params.hostname = rest.substr(0, s2);
+    params.path = rest.substr(s2);
+  }
+
+  // Custom port
+  auto c_port = params.hostname.find_first_of(":");
+  if (c_port != std::string::npos) {
+    params.port = std::stoi(params.hostname.substr(c_port + 1));
+    params.hostname = params.hostname.substr(0, c_port);
+  } else {
+    params.port = params.scheme == url::Scheme::HTTP ? 80 : 443;
+  }
+
+  logger->dbg("Host: {}", params.hostname);
+  logger->dbg("Port: {}", params.port);
+  logger->dbg("Path: {}", params.path);
+  logger->dbg("Scheme: {}",
+              params.scheme == url::Scheme::HTTP ? "HTTP" : "HTTPS");
+  return params;
+}
+
 std::optional<HttpResponse> HttpClient::http_req(
     HttpReqParams params, const std::string& buffer) const {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -141,13 +186,14 @@ std::optional<HttpResponse> HttpClient::http_req(
   }
 
   std::string response{recv_buf};
-  auto parsed = parse_response(response);
+  auto parsed = get_response_from_body(response);
 
   close(sockfd);
   freeaddrinfo(res);
   return parsed;
 }
 
+// https://stackoverflow.com/questions/1011339/how-do-you-make-a-http-request-with-c
 std::optional<HttpResponse> HttpClient::https_req(
     HttpReqParams params, const std::string& buffer) const {
   // OPENSSL --
@@ -228,7 +274,7 @@ std::optional<HttpResponse> HttpClient::https_req(
 
   SSL_CTX_free(ctx);
 
-  auto parsed = parse_response(response);
+  auto parsed = get_response_from_body(response);
   return parsed;
 }
 
