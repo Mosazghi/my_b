@@ -6,8 +6,6 @@
 #include "logger.h"
 #include "url/Url.h"
 
-// Forward declaration
-
 namespace http {
 
 class HttpClient : public IHttpClient {

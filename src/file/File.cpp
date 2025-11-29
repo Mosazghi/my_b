@@ -2,18 +2,17 @@
 #include <fstream>
 #include <optional>
 #include <string>
+#include "logger.h"
 
 namespace file {
 
-File::File() { logger = new Logger("FILE"); }
-File::~File() {}
+static Logger* logger = new Logger("FILE");
 
-std::optional<std::string> File::read(const std::string& path) {
-  logger->inf("Reading file {}", path);
+std::optional<std::string> read(const std::string& path) {
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    logger->err("Could not open the file '{}'", path);
+    logger->warn("Could not open the file '{}'", path);
     return {};
   }
 

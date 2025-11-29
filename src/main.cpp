@@ -42,8 +42,7 @@ int main(int argc, char* argv[]) {
   }
 
   auto http_client = std::make_shared<http::HttpClient>();
-  auto file_client = std::make_shared<file::File>();
-  url::URL url(url_addr, http_client, file_client);
+  url::URL url(url_addr, http_client);
   auto response = url.request();
   if (response) {
     url.show(response->body);

@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
 #include <string>
+#include "IUrl.h"
 #include "Types.h"
-#include "file/File.h"
 #include "http/IHttpClient.h"
 #include "logger.h"
 
@@ -15,16 +15,15 @@ struct HttpResponse;
 
 namespace url {
 
-class URL {
+class URL : public IUrl {
  public:
-  URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client,
-      std::shared_ptr<file::File> file_client);
+  URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client);
   ~URL();
   std::optional<http::HttpResponse> request();
   void show(const std::string& body);
 
  private:
-  struct Url {
+  struct Data {
     Scheme scheme;
     std::string host;
     std::optional<int> port;
@@ -38,7 +37,6 @@ class URL {
 
   Logger* logger;
   std::shared_ptr<http::IHttpClient> m_http_client;
-  std::shared_ptr<file::File> m_file_client;
 
   bool is_scheme_in(Scheme scheme);
   bool is_scheme_in(const std::vector<Scheme>& schemes);

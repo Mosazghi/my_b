@@ -13,13 +13,13 @@
 #include <cstring>
 #include <iostream>
 #include <optional>
+#include "file/File.h"
 #include "logger.h"
 namespace url {
 
 // TODO: Improve parsing
-URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client,
-         std::shared_ptr<file::File> file_client)
-    : m_http_client{http_client}, m_file_client(file_client) {
+URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client)
+    : m_http_client{http_client} {
   logger = new Logger("URL");
 
   auto s1 = url.find("://");
@@ -91,7 +91,7 @@ std::optional<http::HttpResponse> URL::request() {
       break;
     case Scheme::FILE: {
       logger->inf("FILE REQ");
-      auto file = m_file_client->read(m_data.path);
+      auto file = file::read(m_data.path);
       if (file.has_value()) {
         resp = http::HttpResponse{.code = 200, .body = file.value()};
       } else {
