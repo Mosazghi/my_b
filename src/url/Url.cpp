@@ -43,6 +43,9 @@ URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client)
       auto scheme = m_url.substr(0, s);
       if (scheme == "data") {
         m_data.scheme = Scheme::DATA;
+      } else if (scheme == "view-source") {
+        m_data.scheme = Scheme::VIEW_SOURCE;
+        m_url = m_url.substr(s + 1);
       }
     }
   }
@@ -75,6 +78,7 @@ std::optional<http::HttpResponse> URL::request() {
   switch (m_data.scheme) {
     case Scheme::HTTP:
     case Scheme::HTTPS:
+    case Scheme::VIEW_SOURCE:
       resp = m_http_client->get(m_url);
       break;
     case Scheme::FILE: {
@@ -98,6 +102,11 @@ void URL::show(std::string& body) {
   bool in_tag{false};
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
+
+  if (is_scheme_in(Scheme::VIEW_SOURCE)) {
+    std::cout << body;
+    return;
+  }
 
   for (const auto& c : body) {
     if (c == '<') {

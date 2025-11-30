@@ -7,5 +7,6 @@ enum class Scheme {
   HTTPS,
   FILE,
   DATA,
+  VIEW_SOURCE
 };
 }
