@@ -1,2 +1,2 @@
 # my_b
-My Browser - my shot at a minimalist web browser :D   
+A minimal web browser built from scratch. Inspired by this [book](https://browser.engineering/index.html)
