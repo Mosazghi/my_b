@@ -13,6 +13,7 @@
 #include <cstring>
 #include <iostream>
 #include <optional>
+#include <regex>
 #include "file/File.h"
 #include "logger.h"
 #include "utils.h"
@@ -93,8 +94,10 @@ std::optional<http::HttpResponse> URL::request() {
   return resp;
 }
 
-void URL::show(const std::string& body) {
+void URL::show(std::string& body) {
   bool in_tag{false};
+  body = std::regex_replace(body, std::regex("&lt;"), "<");
+  body = std::regex_replace(body, std::regex("&gt;"), ">");
 
   for (const auto& c : body) {
     if (c == '<') {

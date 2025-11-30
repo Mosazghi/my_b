@@ -20,7 +20,7 @@ class URL : public IUrl {
   URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client);
   ~URL();
   std::optional<http::HttpResponse> request();
-  void show(const std::string& body);
+  void show(std::string& body);
 
  private:
   struct Data {
