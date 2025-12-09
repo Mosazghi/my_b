@@ -13,15 +13,11 @@
 #include <format>
 #include <optional>
 #include <regex>
-#include <unordered_map>
 #include "Types.h"
 #include "logger.h"
 #include "url/Url.h"
-#include "utils.h"
 
 namespace http {
-
-static std::regex header_regex(R"(^([A-Za-z0-9\-]+):\s*(.+)\r?$)");
 
 HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
@@ -58,56 +54,20 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) const {
   return resp;
 }
 
-HttpResponse HttpClient::get_response_from_body(
-    const std::string& response) const {
-  if (response.empty()) {
-    return {.code = 404, .body = response};
-  }
+int HttpClient::get_status_code(const std::string& header) const {
+  std::regex sl_regex(R"(HTTP\/\S+\s+(\d{3}))");
+  std::smatch m;
 
-  HttpStatusLine status_line{};
-  std::unordered_map<std::string, std::string> headers{};
-
-  std::string line{};
-  std::istringstream iss(response);
-  int i{};
-  bool body_found = false;
-  std::string body;
-  while (std::getline(iss, line)) {
-    if (i == 0) {
-      std::vector<std::string> stats_split = utils::split_string(line, ' ');
-      status_line.version = stats_split.at(0);
-
-      try {
-        status_line.status = std::stoi(stats_split.at(1));
-      } catch (const std::invalid_argument& e) {
-        logger->err("Error occured during parsing of code: {}", e.what());
-        status_line.status = 400;
-      }
-      status_line.explaination = stats_split.at(2);
-
-      logger->dbg("{}, {} {}", status_line.version, status_line.status,
-                  status_line.explaination);
-    } else {
-      std::smatch match;
-
-      if (std::regex_match(line, match, header_regex)) {
-        std::string key = match[1];
-        std::string val = match[2];
-        assert(key != "transfer-encoding" ||
-               key != "content-encoding" &&
-                   "These headers are not yet supported!");
-
-        headers[key] = val;
-      } else {
-        utils::trim(line);
-        body.append(line + "\n");
-        body_found = true;
-      }
+  if (std::regex_search(header, m, sl_regex)) {
+    try {
+      return std::stoi(m[1].str());
+    } catch (const std::exception& e) {
+      logger->err("Error converting status code {}", e.what());
+      return 500;
     }
-    i++;
   }
 
-  return {.code = status_line.status, .body = body};
+  return 404;
 }
 
 std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
@@ -181,19 +141,51 @@ std::optional<HttpResponse> HttpClient::http_req(
 
   send(sockfd, buffer.c_str(), buffer.size(), 0);
 
-  char recv_buf[1024];
-  int size = read(sockfd, recv_buf, 1024);
-  if (size == -1) {
-    logger->warn("Encountered Err");
-    return std::nullopt;
+  std::string header_buffer{};
+  char c;
+  int bytes_read = 0;
+  while ((bytes_read = read(sockfd, &c, 1)) > 0) {
+    header_buffer.push_back(c);
+    if (header_buffer.size() >= 4 &&
+        header_buffer.substr(header_buffer.size() - 4) == "\r\n\r\n") {
+      break;
+    }
+  }
+  if (bytes_read <= 0 && header_buffer.size() < 4) {
+    logger->warn("connection closed during header read.");
+    return {};
   }
 
-  std::string response{recv_buf};
-  auto parsed = get_response_from_body(response);
+  long content_length{};
+  std::regex cl_regex(R"([Cc]ontent-[Ll]ength:\s*(\d+)\r?\n)");
+  std::smatch match;
+
+  if (std::regex_search(header_buffer, match, cl_regex) && match.size() > 1) {
+    try {
+      content_length = std::stol(match[1].str());
+    } catch (const std::exception& e) {
+      logger->err("Failed to read Content Legnth.");
+      return {};
+    }
+  }
+
+  std::string body_buffer{};
+  body_buffer.resize(content_length);
+  bytes_read = 0;
+  while (bytes_read < content_length) {
+    int size = read(sockfd, body_buffer.data(), content_length - bytes_read);
+    bytes_read += size;
+    if (size <= 0) {
+      break;
+    }
+  }
+
+  std::string response = header_buffer + body_buffer;
+  int code = get_status_code(header_buffer);
 
   close(sockfd);
   freeaddrinfo(res);
-  return parsed;
+  return HttpResponse{code, response};
 }
 
 std::optional<HttpResponse> HttpClient::https_req(
@@ -268,13 +260,15 @@ std::optional<HttpResponse> HttpClient::https_req(
       break;
     }
   }
+
+  std::string response = header_buffer + body_buffer;
+  int code = get_status_code(header_buffer);
+
   BIO_free_all(bio);
 
   SSL_CTX_free(ctx);
 
-  std::string response = header_buffer + body_buffer;
-  auto parsed = get_response_from_body(response);
-  return parsed;
+  return HttpResponse{code, response};
 }
 
 }  // namespace http

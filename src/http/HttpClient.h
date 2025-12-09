@@ -16,7 +16,7 @@ class HttpClient : public IHttpClient {
   std::optional<HttpResponse> get(const std::string& url) const override;
 
  private:
-  HttpResponse get_response_from_body(const std::string& response) const;
+  int get_status_code(const std::string& response) const;
 
   std::optional<HttpResponse> http_req(HttpReqParams params,
                                        const std::string& buffer) const;
