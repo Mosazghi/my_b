@@ -54,7 +54,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) const {
   return resp;
 }
 
-int HttpClient::get_status_code(const std::string& header) const {
+uint16_t HttpClient::get_status_code(const std::string& header) const {
   std::regex sl_regex(R"(HTTP\/\S+\s+(\d{3}))");
   std::smatch m;
 
@@ -141,47 +141,9 @@ std::optional<HttpResponse> HttpClient::http_req(
 
   send(sockfd, buffer.c_str(), buffer.size(), 0);
 
-  std::string header_buffer{};
-  char c;
-  int bytes_read = 0;
-  while ((bytes_read = read(sockfd, &c, 1)) > 0) {
-    header_buffer.push_back(c);
-    if (header_buffer.size() >= 4 &&
-        header_buffer.substr(header_buffer.size() - 4) == "\r\n\r\n") {
-      break;
-    }
-  }
-  if (bytes_read <= 0 && header_buffer.size() < 4) {
-    logger->warn("connection closed during header read.");
-    return {};
-  }
-
-  long content_length{};
-  std::regex cl_regex(R"([Cc]ontent-[Ll]ength:\s*(\d+)\r?\n)");
-  std::smatch match;
-
-  if (std::regex_search(header_buffer, match, cl_regex) && match.size() > 1) {
-    try {
-      content_length = std::stol(match[1].str());
-    } catch (const std::exception& e) {
-      logger->err("Failed to read Content Legnth.");
-      return {};
-    }
-  }
-
-  std::string body_buffer{};
-  body_buffer.resize(content_length);
-  bytes_read = 0;
-  while (bytes_read < content_length) {
-    int size = read(sockfd, body_buffer.data(), content_length - bytes_read);
-    bytes_read += size;
-    if (size <= 0) {
-      break;
-    }
-  }
-
-  std::string response = header_buffer + body_buffer;
-  int code = get_status_code(header_buffer);
+  auto [header, body] = get_header_body(read, sockfd);
+  std::string response = header + body;
+  int code = get_status_code(header);
 
   close(sockfd);
   freeaddrinfo(res);
@@ -222,10 +184,25 @@ std::optional<HttpResponse> HttpClient::https_req(
     logger->warn("Failed write");
   }
 
+  auto [header, body] = get_header_body(BIO_read, bio);
+  std::string response = header + body;
+  int code = get_status_code(header);
+
+  BIO_free_all(bio);
+
+  SSL_CTX_free(ctx);
+
+  return HttpResponse{code, response};
+}
+
+template <typename ReadFunc, typename Stream>
+std::pair<std::string, std::string> HttpClient::get_header_body(
+    ReadFunc func, Stream stream) const {
   std::string header_buffer{};
   char c;
   int bytes_read = 0;
-  while ((bytes_read = BIO_read(bio, &c, 1)) > 0) {
+
+  while ((bytes_read = func(stream, &c, 1)) > 0) {
     header_buffer.push_back(c);
     if (header_buffer.size() >= 4 &&
         header_buffer.substr(header_buffer.size() - 4) == "\r\n\r\n") {
@@ -237,38 +214,37 @@ std::optional<HttpResponse> HttpClient::https_req(
     return {};
   }
 
-  long content_length{};
-  std::regex cl_regex(R"([Cc]ontent-[Ll]ength:\s*(\d+)\r?\n)");
-  std::smatch match;
-
-  if (std::regex_search(header_buffer, match, cl_regex) && match.size() > 1) {
-    try {
-      content_length = std::stol(match[1].str());
-    } catch (const std::exception& e) {
-      logger->err("Failed to read Content Legnth.");
-      return {};
-    }
-  }
+  uint16_t content_length{get_content_len(header_buffer)};
 
   std::string body_buffer{};
   body_buffer.resize(content_length);
-  bytes_read = 0;
-  while (bytes_read < content_length) {
-    int size = BIO_read(bio, body_buffer.data(), content_length - bytes_read);
-    bytes_read += size;
+  int total_bytes_read = 0;
+  while (total_bytes_read < content_length) {
+    int size = func(stream, body_buffer.data() + total_bytes_read,
+                    content_length - total_bytes_read);
     if (size <= 0) {
       break;
     }
+    total_bytes_read += size;
   }
 
-  std::string response = header_buffer + body_buffer;
-  int code = get_status_code(header_buffer);
+  return {header_buffer, body_buffer};
+}
 
-  BIO_free_all(bio);
+uint16_t HttpClient::get_content_len(const std::string& header) const {
+  uint16_t content_length{};
+  std::regex cl_regex(R"([Cc]ontent-[Ll]ength:\s*(\d+)\r?\n)");
+  std::smatch m;
 
-  SSL_CTX_free(ctx);
-
-  return HttpResponse{code, response};
+  if (std::regex_search(header, m, cl_regex) && m.size() > 1) {
+    try {
+      content_length = std::stol(m[1].str());
+    } catch (const std::exception& e) {
+      logger->err("Failed to read Content Legnth.");
+      return 0;
+    }
+  }
+  return content_length;
 }
 
 }  // namespace http
