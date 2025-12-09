@@ -14,6 +14,7 @@ static void parse_url(std::string& buffer_url, char** url, int start_idx,
 
 int main(int argc, char* argv[]) {
   std::string url_addr{};
+  bool print_output{};
 
   if (argc < 2) {
     std::cout << "Usage: " << argv[0] << " --url <url>\n";
@@ -31,6 +32,10 @@ int main(int argc, char* argv[]) {
     if (arg == "--url" || arg == "-u") {
       parse_url(url_addr, argv, i, argc);
     }
+
+    if (arg == "--show" || arg == "-s") {
+      print_output = true;
+    }
   }
 
   if (url_addr.empty()) {
@@ -41,7 +46,7 @@ int main(int argc, char* argv[]) {
   auto http_client = std::make_shared<http::HttpClient>();
   url::URL url(url_addr, http_client);
   auto response = url.request();
-  if (response) {
+  if (response && print_output) {
     url.show(response->body);
   }
 
@@ -67,6 +72,7 @@ static void parse_url(std::string& buffer_url, char** url, int start_idx,
 }
 
 static void print_usage() {
-  std::cout << "Usage: my_b -u|--url <url>\n";
-  std::cout << "URL can be a HTTP address or data scheme (text/html) \n";
+  std::cout << "Usage:\t my_b -u|--url <url>\n";
+  std::cout << "OPTIONS:\n";
+  std::cout << "\t-s|--show\t Print response output\n";
 }
