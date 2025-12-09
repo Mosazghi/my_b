@@ -12,6 +12,7 @@
 #include <cstring>
 #include <format>
 #include <optional>
+#include <regex>
 #include <unordered_map>
 #include "Types.h"
 #include "logger.h"
@@ -19,6 +20,8 @@
 #include "utils.h"
 
 namespace http {
+
+static std::regex header_regex(R"(^([A-Za-z0-9\-]+):\s*(.+)\r?$)");
 
 HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
@@ -32,10 +35,10 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) const {
     return {};
   }
 
-  std::string buffer = std::format("GET {} HTTP/1.0\r\n", params.value().path);
+  std::string buffer = std::format("GET {} HTTP/1.1\r\n", params.value().path);
   buffer.append(std::format("Host: {}\r\n", params.value().hostname));
   buffer.append("User-Agent: mosa\r\n");
-  buffer.append("Connection: close\r\n");
+  buffer.append("Connection: keep-alive\r\n");
   buffer.append("\r\n");
 
   logger->dbg("Sending:\n{}", buffer);
@@ -85,17 +88,16 @@ HttpResponse HttpClient::get_response_from_body(
       logger->dbg("{}, {} {}", status_line.version, status_line.status,
                   status_line.explaination);
     } else {
-      auto split_idx = line.find_first_of(":");
-      if (split_idx != std::string::npos && !body_found) {
-        std::string key = line.substr(0, split_idx);
+      std::smatch match;
 
+      if (std::regex_match(line, match, header_regex)) {
+        std::string key = match[1];
+        std::string val = match[2];
         assert(key != "transfer-encoding" ||
                key != "content-encoding" &&
                    "These headers are not yet supported!");
 
-        std::string val = line.substr(split_idx + 1);
         headers[key] = val;
-        logger->dbg("{} - {}", key, val);
       } else {
         utils::trim(line);
         body.append(line + "\n");
@@ -104,6 +106,7 @@ HttpResponse HttpClient::get_response_from_body(
     }
     i++;
   }
+
   return {.code = status_line.status, .body = body};
 }
 
@@ -193,10 +196,8 @@ std::optional<HttpResponse> HttpClient::http_req(
   return parsed;
 }
 
-// https://stackoverflow.com/questions/1011339/how-do-you-make-a-http-request-with-c
 std::optional<HttpResponse> HttpClient::https_req(
     HttpReqParams params, const std::string& buffer) const {
-  // OPENSSL --
   BIO* bio;
   SSL_CTX* ctx;
 
@@ -222,58 +223,56 @@ std::optional<HttpResponse> HttpClient::https_req(
   }
 
   if (BIO_write(bio, buffer.c_str(), strlen(buffer.c_str())) <= 0) {
-    //
-    //  Handle failed writes here
-    //
     if (!BIO_should_retry(bio)) {
       // Not worth implementing, but worth knowing.
     }
 
-    //
-    //  -> Let us know about the failed writes
-    //
-    printf("Failed write\n");
+    logger->warn("Failed write");
   }
 
-  //
-  //  Variables used to read the response from the server
-  //
-  int size;
+  std::string header_buffer{};
+  char c;
+  int bytes_read = 0;
+  while ((bytes_read = BIO_read(bio, &c, 1)) > 0) {
+    header_buffer.push_back(c);
+    if (header_buffer.size() >= 4 &&
+        header_buffer.substr(header_buffer.size() - 4) == "\r\n\r\n") {
+      break;
+    }
+  }
+  if (bytes_read <= 0 && header_buffer.size() < 4) {
+    logger->warn("connection closed during header read.");
+    return {};
+  }
 
-  char buf_[1024];
-  std::string response;
+  long content_length{};
+  std::regex cl_regex(R"([Cc]ontent-[Ll]ength:\s*(\d+)\r?\n)");
+  std::smatch match;
 
-  //
-  //  Read the response message
-  //
-  for (;;) {
-    //
-    //  Get chunks of the response 1023 at the time.
-    //
-    size = BIO_read(bio, buf_, 1023);
+  if (std::regex_search(header_buffer, match, cl_regex) && match.size() > 1) {
+    try {
+      content_length = std::stol(match[1].str());
+    } catch (const std::exception& e) {
+      logger->err("Failed to read Content Legnth.");
+      return {};
+    }
+  }
 
-    //
-    //  If no more data, then return std::nullopt;
-    //
+  std::string body_buffer{};
+  body_buffer.resize(content_length);
+  bytes_read = 0;
+  while (bytes_read < content_length) {
+    int size = BIO_read(bio, body_buffer.data(), content_length - bytes_read);
+    bytes_read += size;
     if (size <= 0) {
       break;
     }
-
-    //
-    //  Terminate the string with a 0, to let know C when the string
-    //  ends.
-    //
-    buf_[size] = 0;
-
-    //
-    //  ->  Print out the response
-    //
-    response.append(buf_);
   }
   BIO_free_all(bio);
 
   SSL_CTX_free(ctx);
 
+  std::string response = header_buffer + body_buffer;
   auto parsed = get_response_from_body(response);
   return parsed;
 }
