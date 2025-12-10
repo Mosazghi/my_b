@@ -21,9 +21,19 @@ namespace http {
 
 HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
 
-HttpClient::~HttpClient() {}
+HttpClient::~HttpClient() {
+  for (const auto& [_, v] : m_http_sockets) {
+    close(v.first);
+    freeaddrinfo(v.second);
+  }
 
-std::optional<HttpResponse> HttpClient::get(const std::string& url) const {
+  for (const auto& [k, v] : m_https_sockets) {
+    BIO_free_all(v.first);
+    SSL_CTX_free(v.second);
+  }
+}
+
+std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   std::optional<http::HttpResponse> resp{};
   auto params = get_params_from_url(url);
 
@@ -114,9 +124,18 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
   return params;
 }
 
-std::optional<HttpResponse> HttpClient::http_req(
-    HttpReqParams params, const std::string& buffer) const {
-  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
+                                                 const std::string& buffer) {
+  std::string key = get_cache_key(params);
+  auto it = m_https_sockets.find(key);
+  bool cache_hit = it != m_https_sockets.end();
+  int sockfd;
+
+  if (cache_hit) {
+    sockfd = m_http_sockets.at(key).first;
+  } else {
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  }
 
   if (sockfd < 0) {
     logger->err("Connection failed!");
@@ -128,15 +147,17 @@ std::optional<HttpResponse> HttpClient::http_req(
   hints.ai_socktype = SOCK_STREAM;
 
   addrinfo* res;
-  if (getaddrinfo(params.hostname.c_str(), std::to_string(params.port).c_str(),
-                  &hints, &res) != 0) {
-    logger->warn("DNS lookup failed");
-    return std::nullopt;
-  }
+  if (!cache_hit) {
+    if (getaddrinfo(params.hostname.c_str(),
+                    std::to_string(params.port).c_str(), &hints, &res) != 0) {
+      logger->warn("DNS lookup failed");
+      return {};
+    }
 
-  if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
-    logger->warn("Connection failed");
-    return std::nullopt;
+    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
+      logger->warn("Connection failed");
+      return {};
+    }
   }
 
   send(sockfd, buffer.c_str(), buffer.size(), 0);
@@ -145,35 +166,50 @@ std::optional<HttpResponse> HttpClient::http_req(
   std::string response = header + body;
   int code = get_status_code(header);
 
-  close(sockfd);
-  freeaddrinfo(res);
+  if (!cache_hit) {
+    m_http_sockets[key] = std::make_pair(sockfd, res);
+  }
+
   return HttpResponse{code, response};
 }
 
-std::optional<HttpResponse> HttpClient::https_req(
-    HttpReqParams params, const std::string& buffer) const {
+std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
+                                                  const std::string& buffer) {
+  std::string key = get_cache_key(params);
+
   BIO* bio;
   SSL_CTX* ctx;
+
+  auto it = m_https_sockets.find(key);
+  bool cache_hit = it != m_https_sockets.end();
 
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_all_algorithms();
 
-  ctx = SSL_CTX_new(SSLv23_client_method());
+  if (cache_hit) {
+    ctx = m_https_sockets.at(key).second;
+  } else {
+    ctx = SSL_CTX_new(SSLv23_client_method());
+  }
 
   if (ctx == NULL) {
     logger->warn("SSL CTX is null!");
-    return std::nullopt;
+    return {};
   }
 
-  bio = BIO_new_ssl_connect(ctx);
-  BIO_set_conn_hostname(
-      bio, std::format("{}:{}", params.hostname, std::to_string(params.port))
-               .c_str());
+  if (cache_hit) {
+    bio = m_https_sockets.at(key).first;
+  } else {
+    bio = BIO_new_ssl_connect(ctx);
+    BIO_set_conn_hostname(
+        bio, std::format("{}:{}", params.hostname, std::to_string(params.port))
+                 .c_str());
 
-  if (BIO_do_connect(bio) <= 0) {
-    logger->warn("Failed connection");
-    return std::nullopt;
+    if (BIO_do_connect(bio) <= 0) {
+      logger->warn("Failed connection");
+      return std::nullopt;
+    }
   }
 
   if (BIO_write(bio, buffer.c_str(), strlen(buffer.c_str())) <= 0) {
@@ -188,9 +224,9 @@ std::optional<HttpResponse> HttpClient::https_req(
   std::string response = header + body;
   int code = get_status_code(header);
 
-  BIO_free_all(bio);
-
-  SSL_CTX_free(ctx);
+  if (!cache_hit) {
+    m_https_sockets[key] = std::make_pair(bio, ctx);
+  }
 
   return HttpResponse{code, response};
 }
@@ -245,6 +281,10 @@ uint16_t HttpClient::get_content_len(const std::string& header) const {
     }
   }
   return content_length;
+}
+
+std::string HttpClient::get_cache_key(HttpReqParams p) const {
+  return std::format("{}:{}", p.hostname, p.port);
 }
 
 }  // namespace http

@@ -1,6 +1,9 @@
 #pragma once
+#include <netdb.h>
+#include <openssl/types.h>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include "IHttpClient.h"
 #include "Types.h"
 #include "logger.h"
@@ -13,7 +16,7 @@ class HttpClient : public IHttpClient {
   HttpClient();
   ~HttpClient();
 
-  std::optional<HttpResponse> get(const std::string& url) const override;
+  std::optional<HttpResponse> get(const std::string& url) override;
 
  private:
   uint16_t get_status_code(const std::string& header) const;
@@ -24,13 +27,17 @@ class HttpClient : public IHttpClient {
                                                       Stream stream) const;
 
   std::optional<HttpResponse> http_req(HttpReqParams params,
-                                       const std::string& buffer) const;
+                                       const std::string& buffer);
   std::optional<HttpResponse> https_req(HttpReqParams params,
-                                        const std::string& buffer) const;
+                                        const std::string& buffer);
 
   std::optional<http::HttpReqParams> get_params_from_url(
       const std::string& url) const;
+  std::string get_cache_key(HttpReqParams params) const;
   Logger* logger;
+
+  std::unordered_map<std::string, std::pair<int, addrinfo*>> m_http_sockets;
+  std::unordered_map<std::string, std::pair<BIO*, SSL_CTX*>> m_https_sockets{};
 };
 
 }  // namespace http
