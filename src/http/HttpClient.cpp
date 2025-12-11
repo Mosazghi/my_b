@@ -9,6 +9,8 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <format>
 #include <optional>
@@ -35,7 +37,9 @@ HttpClient::~HttpClient() {
 
 std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   std::optional<http::HttpResponse> resp{};
-  auto params = get_params_from_url(url);
+  if (m_last_redirect) {
+  }
+  auto params = m_last_redirect ? m_last_params : get_params_from_url(url);
 
   if (!params.has_value()) {
     return {};
@@ -61,7 +65,41 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       break;
   }
 
+  // TODO: refactor redirect logic
+  if (resp.has_value()) {
+    if (should_redirect(resp.value())) {
+      if (m_redirect_counts >= 2) {
+        logger->warn("Too many redirects. Breaking requests");
+        return {};
+      }
+
+      logger->warn("Redirect");
+
+      std::string loc;
+      if (resp->headers.find("location") != resp->headers.end()) {
+        loc = resp->headers.at("location");
+        m_last_redirect = true;
+        if (loc.at(0) == '/') {
+          m_last_params = params.value();
+          m_last_params.path = loc;
+        } else {
+          m_last_params = get_params_from_url(loc).value();
+        }
+
+        m_redirect_counts++;
+        get(loc);
+      }
+    } else {
+      m_last_redirect = false;
+      m_redirect_counts = 0;
+    }
+  }
+
   return resp;
+}
+
+bool HttpClient::should_redirect(HttpResponse r) const {
+  return (r.code >= 300 && r.code <= 399);
 }
 
 uint16_t HttpClient::get_status_code(const std::string& header) const {
@@ -89,6 +127,7 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
   std::string rest = url.substr(s1 + 3);
 
   auto s2 = rest.find("/");
+  std::cout << "( " << url << ") Scheme: " << scheme << '\n';
 
   if (scheme == "http") {
     params.scheme = url::Scheme::HTTP;
@@ -170,7 +209,17 @@ std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
     m_http_sockets[key] = std::make_pair(sockfd, res);
   }
 
-  return HttpResponse{code, response};
+  std::regex header_re(R"(([A-Za-z0-9-]+):\s*(.*))");
+  std::unordered_map<std::string, std::string> headers;
+
+  for (std::sregex_iterator it(header.begin(), header.end(), header_re), end_it;
+       it != end_it; ++it) {
+    std::string key = (*it)[1];
+    std::string value = (*it)[2];
+    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+    headers[key] = value;
+  }
+  return HttpResponse{code, response, headers};
 }
 
 std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
@@ -228,7 +277,16 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
     m_https_sockets[key] = std::make_pair(bio, ctx);
   }
 
-  return HttpResponse{code, response};
+  // gen. headers
+  std::regex header_re(R"(^([A-Za-z0-9-]+):\s*(.*)\s*$)");
+  std::smatch m;
+  std::unordered_map<std::string, std::string> headers;
+
+  for (std::sregex_iterator it(header.begin(), header.end(), header_re), end_it;
+       it != end_it; ++it) {
+    headers[(*it)[1]] = (*it)[2];
+  }
+  return HttpResponse{code, response, headers};
 }
 
 template <typename ReadFunc, typename Stream>

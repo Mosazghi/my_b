@@ -34,10 +34,14 @@ class HttpClient : public IHttpClient {
   std::optional<http::HttpReqParams> get_params_from_url(
       const std::string& url) const;
   std::string get_cache_key(HttpReqParams params) const;
+  bool should_redirect(HttpResponse r) const;
   Logger* logger;
 
   std::unordered_map<std::string, std::pair<int, addrinfo*>> m_http_sockets;
   std::unordered_map<std::string, std::pair<BIO*, SSL_CTX*>> m_https_sockets{};
+  bool m_last_redirect{};  //< Last request was a reidrect
+  HttpReqParams m_last_params{};
+  int m_redirect_counts{};
 };
 
 }  // namespace http

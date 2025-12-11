@@ -1,6 +1,7 @@
 #pragma once
 #include <url/Types.h>
 #include <string>
+#include <unordered_map>
 
 namespace http {
 
@@ -25,6 +26,7 @@ struct HttpStatusLine {
 struct HttpResponse {
   int code;
   std::string body;
+  std::unordered_map<std::string, std::string> headers;
 };
 
 }  // namespace http
