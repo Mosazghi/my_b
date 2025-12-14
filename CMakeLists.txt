@@ -44,6 +44,7 @@ target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto)
 
 target_link_libraries(my_b my_b_lib GTest::gtest_main)
 target_link_libraries(tests my_b_lib GTest::gtest_main gmock)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 include(GoogleTest)
 
