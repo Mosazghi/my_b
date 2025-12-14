@@ -119,9 +119,9 @@ void URL::show(std::string& body) {
   }
 }
 
-bool URL::is_scheme_in(Scheme s) { return m_data.scheme == s; }
+bool URL::is_scheme_in(Scheme s) const { return m_data.scheme == s; }
 
-bool URL::is_scheme_in(const std::vector<Scheme>& ss) {
+bool URL::is_scheme_in(const std::vector<Scheme>& ss) const {
   for (const auto& s : ss) {
     if (m_data.scheme == s) {
       return true;

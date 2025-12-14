@@ -6,13 +6,6 @@
 #include "http/IHttpClient.h"
 #include "logger.h"
 
-// Forward declarations
-namespace http {
-class HttpClient;
-class IHttpClient;
-struct HttpResponse;
-}  // namespace http
-
 namespace url {
 
 class URL : public IUrl {
@@ -40,7 +33,7 @@ class URL : public IUrl {
   Logger* logger;
   std::shared_ptr<http::IHttpClient> m_http_client;
 
-  bool is_scheme_in(Scheme scheme);
-  bool is_scheme_in(const std::vector<Scheme>& schemes);
+  bool is_scheme_in(Scheme scheme) const;
+  bool is_scheme_in(const std::vector<Scheme>& schemes) const;
 };
 }  // namespace url
