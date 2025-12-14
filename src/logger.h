@@ -3,7 +3,6 @@
 #include <cstdarg>
 #include <format>
 #include <iostream>
-#define DEBUG
 
 enum LogLevel { INFO, DBG, WARN, ERROR };
 class Logger {
@@ -36,16 +35,11 @@ class Logger {
   }
 
  private:
-  // log_format = "%(asctime)s - %(name)s:%(lineno)d - %(levelname)s -
-  // %(message)s" date_format = "%Y-%m-%d %H:%M:%S"
   template <typename... Args>
   inline void base(std::string_view fmt, LogLevel lvl, Args&&... args) {
     auto now = std::chrono::system_clock::now();
-    std::time_t current_time = std::chrono::system_clock::to_time_t(now);
-  std:
-    tm* localtime = std::localtime(&current_time);
-    char buffer[80];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localtime);
+    auto local_now = std::chrono::current_zone()->to_local(now);
+    std::string formatted_time = std::format("{:%Y-%m-%d %H:%M:%S}", local_now);
 
     std::string msg = std::vformat(fmt, std::make_format_args(args...));
 
@@ -71,7 +65,7 @@ class Logger {
     const char* reset = "\033[0m";
 
     std::string const formatted =
-        std::format("{} - {}:{} - {} - {}\n", buffer, m_name, __LINE__,
+        std::format("{} - {}:{} - {} - {}\n", formatted_time, m_name, __LINE__,
                     color + lvl_to_string(lvl) + reset, msg);
 
     switch (lvl) {
