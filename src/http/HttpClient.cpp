@@ -37,12 +37,23 @@ HttpClient::~HttpClient() {
 
 std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   std::optional<http::HttpResponse> resp{};
-  if (m_last_redirect) {
-  }
   auto params = m_last_redirect ? m_last_params : get_params_from_url(url);
+  auto cache_key = get_cache_key(params.value());
 
   if (!params.has_value()) {
     return {};
+  }
+
+  if (!m_last_redirect) {
+    // check if resp is in cache
+    if (m_resp_cache.contains(cache_key)) {
+      auto cache = m_resp_cache.at(cache_key);
+      return HttpResponse{
+          .code = 200,
+          .body = cache.body,
+          .headers = cache.headers,
+      };
+    }
   }
 
   std::string buffer = std::format("GET {} HTTP/1.1\r\n", params.value().path);
@@ -68,8 +79,8 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   // TODO: refactor redirect logic
   if (resp.has_value()) {
     if (should_redirect(resp.value())) {
-      if (m_redirect_counts >= 2) {
-        logger->warn("Too many redirects. Breaking requests");
+      if (m_redirect_counts >= MAX_CONSECUTIVE_REDIRS) {
+        logger->warn("Too many redirects. Halting further requests.");
         return {};
       }
 
@@ -94,10 +105,33 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       m_redirect_counts = 0;
     }
   }
+  const bool should_cache =
+      !m_resp_cache.contains(cache_key) && resp->code == 200;
+
+  if (should_cache) {
+    // get max-age;
+    //
+    std::regex re(R"((?:^|[\s,])max-age\s*=\s*(\d+))", std::regex::icase);
+    std::smatch m;
+    uint32_t max_age = 0;
+    if (resp->headers.contains("cache-control")) {
+      auto cache_ctrl_str = resp->headers.at("cache-control");
+      if (std::regex_search(cache_ctrl_str, m, re)) {
+        max_age = std::stoi(m[1].str());
+        logger->warn("Max age = {}", max_age);
+      } else {
+        logger->warn("Couldnt find max age");
+      }
+      m_resp_cache[cache_key] = HttpRespCache{
+          resp->body, resp->headers, std::chrono::system_clock::now(), max_age};
+    } else {
+      logger->warn("Couldnt find cache control");
+    }
+  } else {
+  }
 
   return resp;
 }
-
 bool HttpClient::should_redirect(HttpResponse r) const {
   return (r.code >= 300 && r.code <= 399);
 }
@@ -127,7 +161,6 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
   std::string rest = url.substr(s1 + 3);
 
   auto s2 = rest.find("/");
-  std::cout << "( " << url << ") Scheme: " << scheme << '\n';
 
   if (scheme == "http") {
     params.scheme = url::Scheme::HTTP;
@@ -163,11 +196,10 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
   return params;
 }
 
-std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
+std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
                                                  const std::string& buffer) {
   std::string key = get_cache_key(params);
-  auto it = m_https_sockets.find(key);
-  bool cache_hit = it != m_https_sockets.end();
+  bool cache_hit = m_https_sockets.contains(key);
   int sockfd;
 
   if (cache_hit) {
@@ -209,17 +241,25 @@ std::optional<HttpResponse> HttpClient::http_req(HttpReqParams params,
     m_http_sockets[key] = std::make_pair(sockfd, res);
   }
 
-  std::regex header_re(R"(([A-Za-z0-9-]+):\s*(.*))");
+  // Generate headers
+  std::regex header_re(R"(([A-Za-z0-9-]+):\s*(.*?)\s*\r?\n)");
+  std::smatch m;
   std::unordered_map<std::string, std::string> headers;
 
-  for (std::sregex_iterator it(header.begin(), header.end(), header_re), end_it;
-       it != end_it; ++it) {
-    std::string key = (*it)[1];
-    std::string value = (*it)[2];
+  std::sregex_iterator begin(header.begin(), header.end(), header_re);
+  std::sregex_iterator end;
+
+  for (std::sregex_iterator i = begin; i != end; ++i) {
+    std::smatch match = *i;
+
+    std::string key = match.str(1);
     std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+    std::string value = match.str(2);
+
     headers[key] = value;
   }
-  return HttpResponse{code, response, headers};
+  return HttpResponse{code, body, headers};
 }
 
 std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
@@ -277,16 +317,26 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
     m_https_sockets[key] = std::make_pair(bio, ctx);
   }
 
-  // gen. headers
-  std::regex header_re(R"(^([A-Za-z0-9-]+):\s*(.*)\s*$)");
+  // Generate headers
+  std::regex header_re(R"(([A-Za-z0-9-]+):\s*(.*?)\s*\r?\n)");
   std::smatch m;
   std::unordered_map<std::string, std::string> headers;
 
-  for (std::sregex_iterator it(header.begin(), header.end(), header_re), end_it;
-       it != end_it; ++it) {
-    headers[(*it)[1]] = (*it)[2];
+  std::sregex_iterator begin(header.begin(), header.end(), header_re);
+  std::sregex_iterator end;
+
+  for (std::sregex_iterator i = begin; i != end; ++i) {
+    std::smatch match = *i;
+
+    std::string key = match.str(1);
+    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+    std::string value = match.str(2);
+
+    headers[key] = value;
   }
-  return HttpResponse{code, response, headers};
+
+  return HttpResponse{code, body, headers};
 }
 
 template <typename ReadFunc, typename Stream>

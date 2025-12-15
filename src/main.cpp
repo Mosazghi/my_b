@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 #include "http/HttpClient.h"
 #include "url/Url.h"
 
@@ -49,13 +50,18 @@ int main(int argc, char* argv[]) {
   if (response && print_output) {
     url.show(response->body);
   }
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  response = url.request();
+  if (response && print_output) {
+    url.show(response->body);
+  }
 
   return 0;
 }
 
 static void parse_url(std::string& buffer_url, char** url, int start_idx,
                       int size) {
-  for (size_t j = start_idx + 1; j < size; ++j) {
+  for (int j = start_idx + 1; j < size; ++j) {
     if (url[j][0] == '-' || (url[j][0] == '-' && url[j][1] == '-')) {
       break;
     }

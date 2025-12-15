@@ -28,10 +28,9 @@ class URL : public IUrl {
     } data_scheme;
   } m_data;
 
-  std::string m_url{};
-
   Logger* logger;
   std::shared_ptr<http::IHttpClient> m_http_client;
+  std::string m_url{};
 
   bool is_scheme_in(Scheme scheme) const;
   bool is_scheme_in(const std::vector<Scheme>& schemes) const;

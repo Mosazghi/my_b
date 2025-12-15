@@ -72,6 +72,7 @@ URL::~URL() {
   delete logger;
 }
 
+// TODO: Refactor to include generics instead
 std::optional<http::HttpResponse> URL::request() {
   std::optional<http::HttpResponse> resp{};
 
@@ -84,9 +85,11 @@ std::optional<http::HttpResponse> URL::request() {
     case Scheme::FILE: {
       auto file = file::read(m_url);
       if (file.has_value()) {
-        resp = http::HttpResponse{.code = 200, .body = file.value()};
+        resp = http::HttpResponse{
+            .code = 200, .body = file.value(), .headers = {}};
       } else {
-        resp = http::HttpResponse{.code = 404, .body = "File not found\n"};
+        resp = http::HttpResponse{
+            .code = 404, .body = "File not found\n", .headers = {}};
       }
       break;
     }
