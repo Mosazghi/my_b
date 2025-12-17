@@ -1,4 +1,5 @@
 #include "HttpClient.h"
+
 #include <arpa/inet.h>
 #include <assert.h>
 #include <http/HttpClient.h>
@@ -9,15 +10,16 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <format>
 #include <optional>
 #include <regex>
+
 #include "Types.h"
 #include "logger.h"
-#include "url/Url.h"
 
 namespace http {
 
@@ -45,14 +47,20 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   }
 
   if (!m_last_redirect) {
-    // check if resp is in cache
     if (m_resp_cache.contains(cache_key)) {
       auto cache = m_resp_cache.at(cache_key);
-      return HttpResponse{
-          .code = 200,
-          .body = cache.body,
-          .headers = cache.headers,
-      };
+      auto now = std::chrono::system_clock::now();
+      bool expired =
+          now > cache.timestamp + std::chrono::seconds(cache.max_age);
+      if (expired) {
+        m_resp_cache.erase(cache_key);
+      } else {
+        return HttpResponse{
+            .code = 200,
+            .body = cache.body,
+            .headers = cache.headers,
+        };
+      }
     }
   }
 
@@ -132,7 +140,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
 
   return resp;
 }
-bool HttpClient::should_redirect(HttpResponse r) const {
+bool HttpClient::should_redirect(const HttpResponse& r) const {
   return (r.code >= 300 && r.code <= 399);
 }
 
@@ -391,7 +399,7 @@ uint16_t HttpClient::get_content_len(const std::string& header) const {
   return content_length;
 }
 
-std::string HttpClient::get_cache_key(HttpReqParams p) const {
+std::string HttpClient::get_cache_key(const HttpReqParams& p) const {
   return std::format("{}:{}", p.hostname, p.port);
 }
 
