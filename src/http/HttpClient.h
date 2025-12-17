@@ -34,8 +34,8 @@ class HttpClient : public IHttpClient {
 
   std::optional<http::HttpReqParams> get_params_from_url(
       const std::string& url) const;
-  std::string get_cache_key(HttpReqParams params) const;
-  bool should_redirect(HttpResponse r) const;
+  std::string get_cache_key(const HttpReqParams& params) const;
+  bool should_redirect(const HttpResponse& r) const;
   Logger* logger;
 
   std::unordered_map<std::string, std::pair<int, addrinfo*>> m_http_sockets;
