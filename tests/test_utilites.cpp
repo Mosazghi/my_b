@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <zlib.h>
+#include <string>
 #include "utils.h"
 
 TEST(Utils, SplitString) {

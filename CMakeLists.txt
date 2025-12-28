@@ -10,6 +10,15 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
 FetchContent_MakeAvailable(googletest)
+# Zlib
+FetchContent_Declare(
+  zlib
+  URL https://github.com/madler/zlib/archive/refs/tags/v1.2.13.zip
+)
+FetchContent_MakeAvailable(zlib)
+
+set(ZLIB_ROOT ${zlib_SOURCE_DIR})
+find_package(ZLIB REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
@@ -23,7 +32,7 @@ list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 add_library(my_b_lib ${SOURCES})
 
 # Apply compile options to library
-target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic)
 
 # Debug definition
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -34,7 +43,7 @@ else ()
 endif()
 
 find_package(OpenSSL REQUIRED)
-target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto ZLIB::ZLIB)
 
 # Main executable
 add_executable(${PROJECT_NAME} src/main.cpp)

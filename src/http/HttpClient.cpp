@@ -1,5 +1,4 @@
 #include "HttpClient.h"
-
 #include <arpa/inet.h>
 #include <assert.h>
 #include <http/HttpClient.h>
@@ -10,16 +9,16 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <zlib.h>
 #include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <format>
 #include <optional>
 #include <regex>
-
 #include "Types.h"
 #include "logger.h"
+#include "utils.h"
 
 namespace http {
 
@@ -67,6 +66,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   std::string buffer = std::format("GET {} HTTP/1.1\r\n", params.value().path);
   buffer.append(std::format("Host: {}\r\n", params.value().hostname));
   buffer.append("User-Agent: mosa\r\n");
+  buffer.append("Accept-Encoding: gzip\r\n");
   buffer.append("Connection: keep-alive\r\n");
   buffer.append("\r\n");
 
@@ -84,18 +84,33 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       break;
   }
 
-  // TODO: refactor redirect logic
   if (resp.has_value()) {
+    // check for compression
+    const std::regex content_encoding_regex(
+        R"(\s*([a-zA-Z0-9_-]+)\s*(?:,\s*([a-zA-Z0-9_-]+)\s*)*)",
+        std::regex::ECMAScript | std::regex::icase);
+    std::smatch m;
+
+    if (resp->headers.contains("content-encoding") &&
+        std::regex_search(resp->headers.at("content-encoding"), m,
+                          content_encoding_regex)) {
+      std::string text_output;
+      auto res = utils::ungzip(resp->body);
+      if (!res.has_value()) {
+        logger->err("Decompressing falied");
+      }
+      resp->body = res.value_or("");
+    }
+
+    // TODO: refactor redirect logic
     if (should_redirect(resp.value())) {
       if (m_redirect_counts >= MAX_CONSECUTIVE_REDIRS) {
         logger->warn("Too many redirects. Halting further requests.");
         return {};
       }
 
-      logger->warn("Redirect");
-
       std::string loc;
-      if (resp->headers.find("location") != resp->headers.end()) {
+      if (resp->headers.contains("location")) {
         loc = resp->headers.at("location");
         m_last_redirect = true;
         if (loc.at(0) == '/') {
@@ -113,12 +128,11 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       m_redirect_counts = 0;
     }
   }
+
   const bool should_cache =
       !m_resp_cache.contains(cache_key) && resp->code == 200;
 
   if (should_cache) {
-    // get max-age;
-    //
     std::regex re(R"((?:^|[\s,])max-age\s*=\s*(\d+))", std::regex::icase);
     std::smatch m;
     uint32_t max_age = 0;
@@ -126,20 +140,15 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       auto cache_ctrl_str = resp->headers.at("cache-control");
       if (std::regex_search(cache_ctrl_str, m, re)) {
         max_age = std::stoi(m[1].str());
-        logger->warn("Max age = {}", max_age);
-      } else {
-        logger->warn("Couldnt find max age");
       }
       m_resp_cache[cache_key] = HttpRespCache{
           resp->body, resp->headers, std::chrono::system_clock::now(), max_age};
-    } else {
-      logger->warn("Couldnt find cache control");
     }
-  } else {
   }
 
   return resp;
 }
+
 bool HttpClient::should_redirect(const HttpResponse& r) const {
   return (r.code >= 300 && r.code <= 399);
 }
@@ -366,18 +375,76 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
     return {};
   }
 
-  uint16_t content_length{get_content_len(header_buffer)};
+  size_t content_length{get_content_len(header_buffer)};
+
+  bool is_chunked{false};
+
+  std::regex te_regex(R"(Transfer-Encoding:\s*chunked)", std::regex::icase);
+  if (std::regex_search(header_buffer, te_regex)) {
+    is_chunked = true;
+    logger->dbg("Is chnked");
+  }
 
   std::string body_buffer{};
-  body_buffer.resize(content_length);
-  int total_bytes_read = 0;
-  while (total_bytes_read < content_length) {
-    int size = func(stream, body_buffer.data() + total_bytes_read,
-                    content_length - total_bytes_read);
-    if (size <= 0) {
-      break;
+  logger->dbg("Content len: {}", content_length);
+  if (is_chunked) {
+    auto read_line = [&]() {
+      std::string line;
+      char c;
+      while (func(stream, &c, 1) > 0) {
+        line.push_back(c);
+        if (line.size() >= 2 && line.substr(line.size() - 2) == "\r\n") {
+          line.pop_back();
+          line.pop_back();
+          break;
+        }
+      }
+      return line;
+    };
+
+    while (1) {
+      // 1. Read the chunk size
+      std::string size_line = read_line();
+      if (size_line.empty()) break;
+      size_t chunk_size{};
+      try {
+        chunk_size = std::stoul(size_line, nullptr, 16);
+      } catch (...) {
+        break;
+      }
+
+      if (chunk_size == 0) {
+        read_line();
+        break;
+      }
+
+      // 2. Read up to 0..chunk_size
+      size_t total_read{};
+      std::string chunk_data(chunk_size, '\0');
+      while (total_read < chunk_size) {
+        int size = func(stream, chunk_data.data() + total_read,
+                        chunk_size - total_read);
+        if (size <= 0) {
+          break;
+        }
+        total_read += size;
+      }
+
+      body_buffer.append(chunk_data);
+
+      // 3. Read trailing "\r\n"
+      read_line();
     }
-    total_bytes_read += size;
+  } else {
+    body_buffer.resize(content_length);
+    size_t total_bytes_read = 0;
+    while (total_bytes_read < content_length) {
+      int size = func(stream, body_buffer.data() + total_bytes_read,
+                      content_length - total_bytes_read);
+      if (size <= 0) {
+        break;
+      }
+    }
   }
 
   return {header_buffer, body_buffer};
