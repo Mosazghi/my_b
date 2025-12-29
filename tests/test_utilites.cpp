@@ -60,7 +60,7 @@ TEST(Utils, TrimWhitespace) {
 }
 
 TEST(Utils, UngzipValidData) {
-  const auto file_path = "tests/mock_data/gzipped-data.gz";
+  const auto file_path = "/mock_data/gzipped-data.gz";
   auto gzipped_content_opt = file::read(file_path);
 
   ASSERT_TRUE(gzipped_content_opt.has_value());
