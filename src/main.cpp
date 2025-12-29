@@ -50,11 +50,6 @@ int main(int argc, char* argv[]) {
   if (response && print_output) {
     url.show(response->body);
   }
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-  response = url.request();
-  if (response && print_output) {
-    url.show(response->body);
-  }
 
   return 0;
 }

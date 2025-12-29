@@ -120,6 +120,7 @@ void URL::show(std::string& body) {
       std::cout << c;
     }
   }
+  std::cout << '\n';
 }
 
 bool URL::is_scheme_in(Scheme s) const { return m_data.scheme == s; }

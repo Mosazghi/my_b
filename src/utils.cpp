@@ -1,7 +1,8 @@
 #include "utils.h"
-#include <algorithm>  // For std::find_if
-#include <cctype>     // For std::isspace
-#include <functional>  // For std::not1, std::ptr_fun (C++03, or use lambda in C++11+)
+#include <zlib.h>
+#include <algorithm>
+#include <cctype>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -41,22 +42,36 @@ void trim(std::string& s) {
   rtrim(s);
 }
 
-// Trim from start (copying)
-std::string ltrim_copy(std::string s) {
-  ltrim(s);
-  return s;
-}
+std::optional<std::string> ungzip(const std::string& compressed) {
+  if (compressed.empty()) return {};
 
-// Trim from end (copying)
-std::string rtrim_copy(std::string s) {
-  rtrim(s);
-  return s;
-}
+  z_stream strm{};
+  strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));
+  strm.avail_in = static_cast<uInt>(compressed.size());
 
-// Trim from both ends (copying)
-std::string trim_copy(std::string s) {
-  trim(s);
-  return s;
+  if (inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK) {
+    return {};
+  }
+
+  std::string out;
+  const size_t chunkSize = 16 * 1024;
+  int ret;
+
+  do {
+    out.resize(out.size() + chunkSize);
+    strm.next_out = reinterpret_cast<Bytef*>(&out[out.size() - chunkSize]);
+    strm.avail_out = chunkSize;
+
+    ret = inflate(&strm, Z_NO_FLUSH);
+    if (ret != Z_OK && ret != Z_STREAM_END) {
+      inflateEnd(&strm);
+      return {};
+    }
+  } while (ret != Z_STREAM_END);
+
+  inflateEnd(&strm);
+  out.resize(strm.total_out);
+  return out;
 }
 
 }  // namespace utils
