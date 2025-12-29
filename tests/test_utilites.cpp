@@ -50,3 +50,10 @@ TEST(Utils, SplitStringConsecutiveDelimiters) {
   EXPECT_EQ(splitted[1], "");
   EXPECT_EQ(splitted[2], "world");
 }
+
+TEST(Utils, TrimWhitespace) {
+  std::string str = "   hello world   ";
+  EXPECT_EQ(str, "   hello world   ");
+  utils::trim(str);
+  EXPECT_EQ(str, "hello world");
+}
