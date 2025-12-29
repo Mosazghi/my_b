@@ -7,7 +7,7 @@ namespace http {
 class IHttpClient {
  public:
   virtual ~IHttpClient(){};
-  virtual std::optional<http::HttpResponse> get(const std::string& url) = 0;
+  virtual std::optional<http::HttpResponse> get(std::string_view url) = 0;
 };
 
 }  // namespace http

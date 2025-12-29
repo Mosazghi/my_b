@@ -7,7 +7,7 @@
 #include "http/HttpClient.h"
 #include "url/Url.h"
 
-static Logger* logger = new Logger("main");
+static Logger& logger = Logger::getInstance();
 
 static void print_usage();
 static void parse_url(std::string& buffer_url, char** url, int start_idx,
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
   }
 
   for (int i = 1; i < argc; i++) {
-    const std::string& arg{argv[i]};
+    std::string_view arg{argv[i]};
 
     if (arg == "--help" || arg == "-h") {
       print_usage();
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (url_addr.empty()) {
-    logger->err("URL cannot be empty!");
+    logger.err("URL cannot be empty!");
     exit(EXIT_FAILURE);
   }
 

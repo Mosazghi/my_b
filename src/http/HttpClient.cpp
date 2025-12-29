@@ -22,7 +22,7 @@
 
 namespace http {
 
-HttpClient::HttpClient() { logger = new Logger("HttpClient"); }
+HttpClient::HttpClient() {}
 
 HttpClient::~HttpClient() {
   for (const auto& [_, v] : m_http_sockets) {
@@ -36,7 +36,7 @@ HttpClient::~HttpClient() {
   }
 }
 
-std::optional<HttpResponse> HttpClient::get(const std::string& url) {
+std::optional<HttpResponse> HttpClient::get(std::string_view url) {
   std::optional<http::HttpResponse> resp{};
   auto params = m_last_redirect ? m_last_params : get_params_from_url(url);
   auto cache_key = get_cache_key(params.value());
@@ -46,13 +46,13 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   }
 
   if (!m_last_redirect) {
-    if (m_resp_cache.contains(cache_key)) {
-      auto cache = m_resp_cache.at(cache_key);
+    if (m_response_cache.contains(cache_key)) {
+      auto cache = m_response_cache.at(cache_key);
       auto now = std::chrono::system_clock::now();
       bool expired =
           now > cache.timestamp + std::chrono::seconds(cache.max_age);
       if (expired) {
-        m_resp_cache.erase(cache_key);
+        m_response_cache.erase(cache_key);
       } else {
         return HttpResponse{
             .code = 200,
@@ -70,7 +70,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   buffer.append("Connection: keep-alive\r\n");
   buffer.append("\r\n");
 
-  logger->dbg("Sending:\n{}", buffer);
+  logger.dbg("Sending:\n{}", buffer);
 
   switch (params.value().scheme) {
     case url::Scheme::HTTP:
@@ -80,7 +80,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       resp = https_req(params.value(), buffer);
       break;
     default:
-      logger->err("Unknown scheme");
+      logger.err("Unknown scheme");
       break;
   }
 
@@ -97,7 +97,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       std::string text_output;
       auto res = utils::ungzip(resp->body);
       if (!res.has_value()) {
-        logger->err("Decompressing falied");
+        logger.err("Decompressing falied");
       }
       resp->body = res.value_or("");
     }
@@ -105,7 +105,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
     // TODO: refactor redirect logic
     if (should_redirect(resp.value())) {
       if (m_redirect_counts >= MAX_CONSECUTIVE_REDIRS) {
-        logger->warn("Too many redirects. Halting further requests.");
+        logger.warn("Too many redirects. Halting further requests.");
         return {};
       }
 
@@ -130,7 +130,7 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
   }
 
   const bool should_cache =
-      !m_resp_cache.contains(cache_key) && resp->code == 200;
+      !m_response_cache.contains(cache_key) && resp->code == 200;
 
   if (should_cache) {
     std::regex re(R"((?:^|[\s,])max-age\s*=\s*(\d+))", std::regex::icase);
@@ -141,18 +141,13 @@ std::optional<HttpResponse> HttpClient::get(const std::string& url) {
       if (std::regex_search(cache_ctrl_str, m, re)) {
         max_age = std::stoi(m[1].str());
       }
-      m_resp_cache[cache_key] = HttpRespCache{
+      m_response_cache[cache_key] = HttpRespCache{
           resp->body, resp->headers, std::chrono::system_clock::now(), max_age};
     }
   }
 
   return resp;
 }
-
-bool HttpClient::should_redirect(const HttpResponse& r) const {
-  return (r.code >= 300 && r.code <= 399);
-}
-
 uint16_t HttpClient::get_status_code(const std::string& header) const {
   std::regex sl_regex(R"(HTTP\/\S+\s+(\d{3}))");
   std::smatch m;
@@ -161,7 +156,7 @@ uint16_t HttpClient::get_status_code(const std::string& header) const {
     try {
       return std::stoi(m[1].str());
     } catch (const std::exception& e) {
-      logger->err("Error converting status code {}", e.what());
+      logger.err("Error converting status code {}", e.what());
       return 500;
     }
   }
@@ -170,12 +165,12 @@ uint16_t HttpClient::get_status_code(const std::string& header) const {
 }
 
 std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
-    const std::string& url) const {
+    std::string_view url) const {
   http::HttpReqParams params{};
   auto s1 = url.find("://");
-  std::string scheme = url.substr(0, s1);
+  std::string_view scheme = url.substr(0, s1);
 
-  std::string rest = url.substr(s1 + 3);
+  std::string_view rest = url.substr(s1 + 3);
 
   auto s2 = rest.find("/");
 
@@ -184,7 +179,7 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
   } else if (scheme == "https") {
     params.scheme = url::Scheme::HTTPS;
   } else {
-    logger->warn("Unknwon scheme");
+    logger.warn("Unknwon scheme");
     return {};
   }
 
@@ -205,16 +200,16 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
     params.port = params.scheme == url::Scheme::HTTP ? 80 : 443;
   }
 
-  logger->dbg("Host: {}", params.hostname);
-  logger->dbg("Port: {}", params.port);
-  logger->dbg("Path: {}", params.path);
-  logger->dbg("Scheme: {}",
-              params.scheme == url::Scheme::HTTP ? "HTTP" : "HTTPS");
+  logger.dbg("Host: {}", params.hostname);
+  logger.dbg("Port: {}", params.port);
+  logger.dbg("Path: {}", params.path);
+  logger.dbg("Scheme: {}",
+             params.scheme == url::Scheme::HTTP ? "HTTP" : "HTTPS");
   return params;
 }
 
 std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
-                                                 const std::string& buffer) {
+                                                 std::string_view buffer) {
   std::string key = get_cache_key(params);
   bool cache_hit = m_https_sockets.contains(key);
   int sockfd;
@@ -226,7 +221,7 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
   }
 
   if (sockfd < 0) {
-    logger->err("Connection failed!");
+    logger.err("Connection failed!");
     exit(EXIT_FAILURE);
   }
 
@@ -238,17 +233,17 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
   if (!cache_hit) {
     if (getaddrinfo(params.hostname.c_str(),
                     std::to_string(params.port).c_str(), &hints, &res) != 0) {
-      logger->warn("DNS lookup failed");
+      logger.warn("DNS lookup failed");
       return {};
     }
 
     if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0) {
-      logger->warn("Connection failed");
+      logger.warn("Connection failed");
       return {};
     }
   }
 
-  send(sockfd, buffer.c_str(), buffer.size(), 0);
+  send(sockfd, buffer.data(), buffer.size(), 0);
 
   auto [header, body] = get_header_body(read, sockfd);
   std::string response = header + body;
@@ -280,7 +275,7 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
 }
 
 std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
-                                                  const std::string& buffer) {
+                                                  std::string_view buffer) {
   std::string key = get_cache_key(params);
 
   BIO* bio;
@@ -300,7 +295,7 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
   }
 
   if (ctx == NULL) {
-    logger->warn("SSL CTX is null!");
+    logger.warn("SSL CTX is null!");
     return {};
   }
 
@@ -313,17 +308,17 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
                  .c_str());
 
     if (BIO_do_connect(bio) <= 0) {
-      logger->warn("Failed connection");
+      logger.warn("Failed connection");
       return std::nullopt;
     }
   }
 
-  if (BIO_write(bio, buffer.c_str(), strlen(buffer.c_str())) <= 0) {
+  if (BIO_write(bio, buffer.data(), strlen(buffer.data())) <= 0) {
     if (!BIO_should_retry(bio)) {
       // Not worth implementing, but worth knowing.
     }
 
-    logger->warn("Failed write");
+    logger.warn("Failed write");
   }
 
   auto [header, body] = get_header_body(BIO_read, bio);
@@ -371,7 +366,7 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
     }
   }
   if (bytes_read <= 0 && header_buffer.size() < 4) {
-    logger->warn("connection closed during header read.");
+    logger.warn("connection closed during header read.");
     return {};
   }
 
@@ -382,11 +377,11 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
   std::regex te_regex(R"(Transfer-Encoding:\s*chunked)", std::regex::icase);
   if (std::regex_search(header_buffer, te_regex)) {
     is_chunked = true;
-    logger->dbg("Is chnked");
+    logger.dbg("Is chnked");
   }
 
   std::string body_buffer{};
-  logger->dbg("Content len: {}", content_length);
+  logger.dbg("Content len: {}", content_length);
   if (is_chunked) {
     auto read_line = [&]() {
       std::string line;
@@ -459,15 +454,11 @@ uint16_t HttpClient::get_content_len(const std::string& header) const {
     try {
       content_length = std::stol(m[1].str());
     } catch (const std::exception& e) {
-      logger->err("Failed to read Content Legnth.");
+      logger.err("Failed to read Content Legnth.");
       return 0;
     }
   }
   return content_length;
-}
-
-std::string HttpClient::get_cache_key(const HttpReqParams& p) const {
-  return std::format("{}:{}", p.hostname, p.port);
 }
 
 }  // namespace http

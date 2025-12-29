@@ -10,7 +10,13 @@ enum class LogLevel { DBG, INFO, WARN, ERROR };
 
 class Logger {
  public:
-  explicit Logger(std::string_view name) : m_name(name) {}
+  /**
+   * @brief Get the singleton instance of the Logger
+   */
+  static Logger& getInstance() {
+    static Logger instance;
+    return instance;
+  }
 
   struct LogFormat {
     std::string_view fmt;
@@ -45,62 +51,63 @@ class Logger {
   }
 
  private:
-  std::string m_name;
-  std::mutex m_mutex;
+  // Enforce singleton pattern
+  Logger() = default;
+  ~Logger() = default;
+  Logger(const Logger&) = delete;
+  Logger& operator=(const Logger&) = delete;
+  Logger(Logger&&) = delete;
+  Logger& operator=(Logger&&) = delete;
 
   template <typename... Args>
   void log(LogLevel lvl, const LogFormat& format, Args&&... args) {
-    auto const time =
+    const auto time =
         std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
 
-    std::string user_msg =
+    const std::string user_msg =
         std::vformat(format.fmt, std::make_format_args(args...));
-    std::string_view full_file_path = format.loc.file_name();
-    size_t sep_pos = full_file_path.rfind("/");
-    std::string_view short_file_name;
 
-    if (sep_pos != std::string::npos) {
-      short_file_name = full_file_path.substr(sep_pos + 1);
-    } else {
-      short_file_name = full_file_path;
-    }
+    const std::string_view short_file_name =
+        get_short_file_name(format.loc.file_name());
 
-    std::string final_output =
-        std::format("{:%Y-%m-%d %H:%M:%S} {}{}{} {}:{}: {}\n", time,
+    const std::string final_output =
+        std::format("{:%Y-%m-%d %H:%M:%S} {}{:5}{} {}:{}: {}\n", time,
                     lvl_to_color_code(lvl), lvl_to_string(lvl), "\033[0m",
                     short_file_name, format.loc.line(), user_msg);
 
     {
       std::lock_guard lock(m_mutex);
-      if (lvl == LogLevel::ERROR) {
-        std::cerr << final_output;
-      } else {
-        std::cout << final_output;
-      }
+      std::cerr << final_output;
     }
   }
 
-  constexpr std::string_view lvl_to_color_code(LogLevel lvl) {
+  static constexpr std::string_view get_short_file_name(
+      const std::string_view& full_file_path) {
+    size_t sep_pos = full_file_path.rfind("/");
+
+    if (sep_pos != std::string::npos) {
+      return full_file_path.substr(sep_pos + 1);
+    } else {
+      return full_file_path;
+    }
+  }
+
+  static constexpr std::string_view lvl_to_color_code(LogLevel lvl) {
     switch (lvl) {
       case LogLevel::DBG:
         return "\033[36m";
-        break;
       case LogLevel::INFO:
         return "\033[32m";
-        break;
       case LogLevel::WARN:
         return "\033[33m";
-        break;
       case LogLevel::ERROR:
         return "\033[31m";
-        break;
       default:
         return "\033[32m";
-        break;
     }
   }
 
-  constexpr std::string_view lvl_to_string(LogLevel lvl) {
+  static constexpr std::string_view lvl_to_string(LogLevel lvl) {
     switch (lvl) {
       case LogLevel::DBG:
         return "DEBUG";
@@ -112,7 +119,8 @@ class Logger {
         return "ERROR";
       default:
         return "UNKNOWN";
-        break;
     }
   }
+
+  std::mutex m_mutex;
 };

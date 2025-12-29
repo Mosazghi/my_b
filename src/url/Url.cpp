@@ -20,9 +20,8 @@
 
 namespace url {
 
-URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client)
+URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
     : m_http_client{http_client}, m_url{url} {
-  logger = new Logger("URL");
   // Trim url
   utils::trim(m_url);
 
@@ -62,15 +61,12 @@ URL::URL(const std::string& url, std::shared_ptr<http::IHttpClient> http_client)
     auto s2 = rest.find(",");
     m_data.data_scheme.protocol = rest.substr(0, s2);
     m_data.data_scheme.data = rest.substr(s2 + 1);
-    logger->dbg("DATA SCHEME: {} ({}) :::: {},  {}", m_url, rest,
-                m_data.data_scheme.protocol, m_data.data_scheme.data);
+    logger.dbg("DATA SCHEME: {} ({}) :::: {},  {}", m_url, rest,
+               m_data.data_scheme.protocol, m_data.data_scheme.data);
   }
 }
 
-URL::~URL() {
-  logger = nullptr;
-  delete logger;
-}
+URL::~URL() {}
 
 // TODO: Refactor to include generics instead
 std::optional<http::HttpResponse> URL::request() {
@@ -123,14 +119,5 @@ void URL::show(std::string& body) {
   std::cout << '\n';
 }
 
-bool URL::is_scheme_in(Scheme s) const { return m_data.scheme == s; }
 
-bool URL::is_scheme_in(const std::vector<Scheme>& ss) const {
-  for (const auto& s : ss) {
-    if (m_data.scheme == s) {
-      return true;
-    }
-  }
-  return false;
-}
 }  // namespace url

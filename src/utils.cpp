@@ -21,28 +21,25 @@ std::vector<std::string> split_string(const std::string& s, char delim) {
   return strings;
 }
 
-// Trim from start (in place)
-void ltrim(std::string& s) {
+static void ltrim(std::string& s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
             return !std::isspace(ch);
           }));
 }
 
-// Trim from end (in place)
-void rtrim(std::string& s) {
+static void rtrim(std::string& s) {
   s.erase(std::find_if(s.rbegin(), s.rend(),
                        [](unsigned char ch) { return !std::isspace(ch); })
               .base(),
           s.end());
 }
 
-// Trim from both ends (in place)
 void trim(std::string& s) {
   ltrim(s);
   rtrim(s);
 }
 
-std::optional<std::string> ungzip(const std::string& compressed) {
+std::optional<std::string> ungzip(std::string_view compressed) {
   if (compressed.empty()) return {};
 
   z_stream strm{};

@@ -6,13 +6,13 @@
 
 namespace file {
 
-static Logger* logger = new Logger("FILE");
+static Logger& logger = Logger::getInstance();
 
 std::optional<std::string> read(const std::string& path) {
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    logger->warn("Could not open the file '{}'", path);
+    logger.warn("Could not open the file '{}'", path);
     return {};
   }
 
