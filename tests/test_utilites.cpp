@@ -2,6 +2,7 @@
 #include <zlib.h>
 #include <string>
 #include "file/File.h"
+#include "test_helpers.h"
 #include "utils.h"
 
 TEST(Utils, SplitString) {
@@ -60,7 +61,7 @@ TEST(Utils, TrimWhitespace) {
 }
 
 TEST(Utils, UngzipValidData) {
-  const auto file_path = "/mock_data/gzipped-data.gz";
+  const auto file_path = get_mock_data_file_path("gzipped-data.gz");
   auto gzipped_content_opt = file::read(file_path);
 
   ASSERT_TRUE(gzipped_content_opt.has_value());
