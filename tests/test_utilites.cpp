@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <zlib.h>
 #include <string>
+#include "file/File.h"
 #include "utils.h"
 
 TEST(Utils, SplitString) {
@@ -56,4 +57,17 @@ TEST(Utils, TrimWhitespace) {
   EXPECT_EQ(str, "   hello world   ");
   utils::trim(str);
   EXPECT_EQ(str, "hello world");
+}
+
+TEST(Utils, UngzipValidData) {
+  const auto file_path = "tests/mock_data/gzipped-data.gz";
+  auto gzipped_content_opt = file::read(file_path);
+
+  ASSERT_TRUE(gzipped_content_opt.has_value());
+  const auto& gzipped_content = gzipped_content_opt.value();
+  auto uncompressed_opt = utils::ungzip(gzipped_content);
+  ASSERT_TRUE(uncompressed_opt.has_value());
+  const auto& uncompressed = uncompressed_opt.value();
+  const std::string expected_content = "Hello World! This is gzipped data\n";
+  EXPECT_EQ(uncompressed, expected_content);
 }
