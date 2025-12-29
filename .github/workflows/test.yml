@@ -16,6 +16,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ccache cmake ninja-build libssl-dev
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
       - name: Cache ccache
         uses: actions/cache@v4
         with:
