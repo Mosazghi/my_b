@@ -13,13 +13,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 # Zlib
-FetchContent_Declare(
-  zlib
-  URL https://github.com/madler/zlib/archive/refs/tags/v1.2.13.zip
-)
-FetchContent_MakeAvailable(zlib)
 
-set(ZLIB_ROOT ${zlib_SOURCE_DIR})
 find_package(ZLIB REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
