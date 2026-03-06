@@ -7,9 +7,9 @@ namespace url {
 
 class IUrl {
  public:
-  virtual ~IUrl() {};
+  virtual ~IUrl(){};
   virtual void show(std::string& body) = 0;
-  virtual std::optional<http::HttpResponse> request() = 0;
+  virtual http::HttpResult request() = 0;
 };
 
 }  // namespace url

@@ -9,7 +9,7 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <zlib.h>
+// #include <zlib.h>
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -36,118 +36,149 @@ HttpClient::~HttpClient() {
   }
 }
 
-std::optional<HttpResponse> HttpClient::get(std::string_view url) {
-  std::optional<http::HttpResponse> resp{};
-  auto params = m_last_redirect ? m_last_params : get_params_from_url(url);
-  auto cache_key = get_cache_key(params.value());
+HttpResult HttpClient::get(std::string_view url) {
+  auto params = get_params_from_url(url);
+  auto cache_key = get_cache_key(params.value());  // Add null check?
+  HttpResult result{};
 
   if (!params.has_value()) {
-    return {};
+    logger.err("Failed to get HTTP request parameters from URL");
+    result.errors.push_back("Failed to get HTTP request parameters from URL");
+    return result;
   }
 
-  if (!m_last_redirect) {
-    if (m_response_cache.contains(cache_key)) {
-      auto cache = m_response_cache.at(cache_key);
-      auto now = std::chrono::system_clock::now();
-      bool expired =
-          now > cache.timestamp + std::chrono::seconds(cache.max_age);
-      if (expired) {
-        m_response_cache.erase(cache_key);
-      } else {
-        return HttpResponse{
-            .code = 200,
-            .body = cache.body,
-            .headers = cache.headers,
-        };
-      }
+  if (m_response_cache.contains(cache_key)) {
+    auto cache = m_response_cache.at(cache_key);
+    auto now = std::chrono::system_clock::now();
+    bool expired = now > cache.timestamp + std::chrono::seconds(cache.max_age);
+    if (expired) {
+      m_response_cache.erase(cache_key);
+    } else {
+      return HttpResult{
+          .response =
+              HttpResponse{.status_line = HttpStatusLine{.version = "HTTP/1.1",
+                                                         .explanation = "OK",
+                                                         .status = 200},
+                           .headers = cache.headers,
+                           .body = cache.body},
+          .errors = {},
+          .redirect_count = 0,
+      };
     }
   }
 
-  std::string buffer = std::format("GET {} HTTP/1.1\r\n", params.value().path);
-  buffer.append(std::format("Host: {}\r\n", params.value().hostname));
-  buffer.append("User-Agent: mosa\r\n");
-  buffer.append("Accept-Encoding: gzip\r\n");
-  buffer.append("Connection: keep-alive\r\n");
-  buffer.append("\r\n");
+  auto perform_request = [&](HttpReqParams params) -> HttpResult {
+    static int num_requests = 0;
+    num_requests++;
+    std::optional<http::HttpResponse> response{};
 
-  logger.dbg("Sending:\n{}", buffer);
+    HttpRequestBuilder builder;
 
-  switch (params.value().scheme) {
-    case url::Scheme::HTTP:
-      resp = http_req(params.value(), buffer);
-      break;
-    case url::Scheme::HTTPS:
-      resp = https_req(params.value(), buffer);
-      break;
-    default:
-      logger.err("Unknown scheme");
-      break;
-  }
+    const auto buffer = builder.with_method(HttpMethod::GET)
+                            .with_path(params.path)
+                            .with_header("Host", params.hostname)
+                            .with_header("User-Agent", "mosa")
+                            .with_header("Accept-Encoding", "gzip")
+                            .with_header("Connection", "keep-alive")
+                            .build();
 
-  if (resp.has_value()) {
-    // check for compression
+    logger.dbg("Sending:\n{}", buffer);
+
+    switch (params.scheme) {
+      case url::Scheme::HTTP:
+        response = http_req(params, buffer);
+        break;
+      case url::Scheme::HTTPS:
+        response = https_req(params, buffer);
+        break;
+      default:
+        logger.err("Unknown scheme");
+        break;
+    }
+
+    HttpResult result{};
+
+    if (!response.has_value()) {
+      result.errors.push_back("Request failed");
+      return result;
+    }
+
+    result.response = response.value();
+
     const std::regex content_encoding_regex(
         R"(\s*([a-zA-Z0-9_-]+)\s*(?:,\s*([a-zA-Z0-9_-]+)\s*)*)",
         std::regex::ECMAScript | std::regex::icase);
     std::smatch m;
 
-    if (resp->headers.contains("content-encoding") &&
-        std::regex_search(resp->headers.at("content-encoding"), m,
+    if (result.response.headers.contains("content-encoding") &&
+        std::regex_search(result.response.headers.at("content-encoding"), m,
                           content_encoding_regex)) {
       std::string text_output;
-      auto res = utils::ungzip(resp->body);
-      if (!res.has_value()) {
+      auto decompressed = utils::ungzip(result.response.body);
+      if (!decompressed.has_value()) {
         logger.err("Decompressing falied");
+        result.errors.push_back("Decompressing failed");
       }
-      resp->body = res.value_or("");
+
+      result.response.body = decompressed.value_or("");
+      result.redirect_count = num_requests - 1;
     }
 
-    // TODO: refactor redirect logic
-    if (should_redirect(resp.value())) {
-      if (m_redirect_counts >= MAX_CONSECUTIVE_REDIRS) {
-        logger.warn("Too many redirects. Halting further requests.");
-        return {};
-      }
+    return result;
+  };
 
-      std::string loc;
-      if (resp->headers.contains("location")) {
-        loc = resp->headers.at("location");
-        m_last_redirect = true;
-        if (loc.at(0) == '/') {
-          m_last_params = params.value();
-          m_last_params.path = loc;
-        } else {
-          m_last_params = get_params_from_url(loc).value();
-        }
+  result = perform_request(params.value());
 
-        m_redirect_counts++;
-        get(loc);
-      }
-    } else {
-      m_last_redirect = false;
-      m_redirect_counts = 0;
-    }
+  if (result.has_error()) {
+    logger.err("Some error occurred");
+    return result;
   }
 
-  const bool should_cache =
-      !m_response_cache.contains(cache_key) && resp->code == 200;
+  int redirects_num = 0;
+  auto last_params = params.value();
+  while (should_redirect(result.response) &&
+         redirects_num < MAX_CONSECUTIVE_REDIRECTS) {
+    logger.dbg("Redirecting to {}", result.response.headers.at("location"));
+
+    if (!result.response.headers.contains("location")) {
+      break;
+    }
+
+    std::string loc;
+    loc = result.response.headers.at("location");
+    // m_last_redirect = true;
+    if (loc.at(0) == '/') {
+      last_params = params.value();
+      last_params.path = loc;
+    } else {
+      last_params = get_params_from_url(loc).value();
+    }
+
+    result = perform_request(last_params);
+    // result.redirect_count++;
+  }
+
+  const bool should_cache = !m_response_cache.contains(cache_key) &&
+                            result.response.status_line.status == 200;
 
   if (should_cache) {
     std::regex re(R"((?:^|[\s,])max-age\s*=\s*(\d+))", std::regex::icase);
     std::smatch m;
     uint32_t max_age = 0;
-    if (resp->headers.contains("cache-control")) {
-      auto cache_ctrl_str = resp->headers.at("cache-control");
+    if (result.response.headers.contains("cache-control")) {
+      auto cache_ctrl_str = result.response.headers.at("cache-control");
       if (std::regex_search(cache_ctrl_str, m, re)) {
         max_age = std::stoi(m[1].str());
       }
       m_response_cache[cache_key] = HttpRespCache{
-          resp->body, resp->headers, std::chrono::system_clock::now(), max_age};
+          result.response.headers, std::chrono::system_clock::now(),
+          result.response.body, max_age};
     }
   }
 
-  return resp;
+  return result;
 }
+
 uint16_t HttpClient::get_status_code(const std::string& header) const {
   std::regex sl_regex(R"(HTTP\/\S+\s+(\d{3}))");
   std::smatch m;
@@ -222,7 +253,7 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
 
   if (sockfd < 0) {
     logger.err("Connection failed!");
-    exit(EXIT_FAILURE);
+    return {};
   }
 
   addrinfo hints{};
@@ -271,7 +302,13 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
 
     headers[key] = value;
   }
-  return HttpResponse{code, body, headers};
+  return HttpResponse{
+      .status_line =
+          HttpStatusLine{.version = "HTTP/1.1",
+                         .explanation = "OK",  // TODO parse explanation
+                         .status = code},
+      .headers = headers,
+      .body = body};
 }
 
 std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
@@ -313,7 +350,7 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
     }
   }
 
-  if (BIO_write(bio, buffer.data(), strlen(buffer.data())) <= 0) {
+  if (BIO_write(bio, buffer.data(), buffer.size()) <= 0) {
     if (!BIO_should_retry(bio)) {
       // Not worth implementing, but worth knowing.
     }
@@ -348,7 +385,13 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
     headers[key] = value;
   }
 
-  return HttpResponse{code, body, headers};
+  return HttpResponse{
+      .status_line =
+          HttpStatusLine{.version = "HTTP/1.1",
+                         .explanation = "OK",  // TODO parse explanation
+                         .status = code},
+      .headers = headers,
+      .body = body};
 }
 
 template <typename ReadFunc, typename Stream>
@@ -381,8 +424,8 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
   }
 
   std::string body_buffer{};
-  logger.dbg("Content len: {}", content_length);
   if (is_chunked) {
+    // Read a single line from the chunked stream
     auto read_line = [&]() {
       std::string line;
       char c;
@@ -439,6 +482,7 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
       if (size <= 0) {
         break;
       }
+      total_bytes_read += size;
     }
   }
 

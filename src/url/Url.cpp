@@ -69,8 +69,8 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
 URL::~URL() {}
 
 // TODO: Refactor to include generics instead
-std::optional<http::HttpResponse> URL::request() {
-  std::optional<http::HttpResponse> resp{};
+http::HttpResult URL::request() {
+  http::HttpResult resp{};
 
   switch (m_data.scheme) {
     case Scheme::HTTP:
@@ -81,11 +81,11 @@ std::optional<http::HttpResponse> URL::request() {
     case Scheme::FILE: {
       auto file = file::read(m_url);
       if (file.has_value()) {
-        resp = http::HttpResponse{
-            .code = 200, .body = file.value(), .headers = {}};
+        // resp = http::HttpResponse{
+        //     .code = 200, .body = file.value(), .headers = {}};
       } else {
-        resp = http::HttpResponse{
-            .code = 404, .body = "File not found\n", .headers = {}};
+        // resp = http::HttpResponse{
+        //     .code = 404, .body = "File not found\n", .headers = {}};
       }
       break;
     }
@@ -118,6 +118,5 @@ void URL::show(std::string& body) {
   }
   std::cout << '\n';
 }
-
 
 }  // namespace url

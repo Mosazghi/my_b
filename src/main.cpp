@@ -13,6 +13,7 @@ static void print_usage();
 static void parse_url(std::string& buffer_url, char** url, int start_idx,
                       int size);
 
+
 int main(int argc, char* argv[]) {
   std::string url_addr{};
   bool print_output{};
@@ -46,9 +47,9 @@ int main(int argc, char* argv[]) {
 
   auto http_client = std::make_shared<http::HttpClient>();
   url::URL url(url_addr, http_client);
-  auto response = url.request();
-  if (response && print_output) {
-    url.show(response->body);
+  auto result = url.request();
+  if (result.is_success() && print_output) {
+    url.show(result.response.body);
   }
 
   return 0;
