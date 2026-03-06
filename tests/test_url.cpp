@@ -13,28 +13,27 @@ class UrlTest : public ::testing::Test {
 };
 
 TEST_F(UrlTest, HttpsValid) {
-  auto url = new url::URL("https://portfolio.mostes.no/", m_http_client);
-  auto resp = url->request();
+  auto url = url::URL("https://portfolio.mostes.no/", m_http_client);
+  auto resp = url.request();
 
-  EXPECT_TRUE(resp.has_value());
-  EXPECT_NE(resp->body, "");
-  EXPECT_EQ(resp->code, 200);
+  // EXPECT_TRUE(resp.has_value());
+  EXPECT_NE(resp.response.body, "");
+  EXPECT_EQ(resp.response.status_line.status, 200);
 }
 
 TEST_F(UrlTest, HttpsValidNoPathGiven) {
-  auto url = new url::URL("https://portfolio.mostes.no", m_http_client);
-  auto resp = url->request();
+  auto url = url::URL("https://portfolio.mostes.no", m_http_client);
+  auto resp = url.request();
 
-  EXPECT_TRUE(resp.has_value());
-  EXPECT_NE(resp->body, "");
-  EXPECT_EQ(resp->code, 200);
+  EXPECT_NE(resp.response.body, "");
+  EXPECT_EQ(resp.response.status_line.status, 200);
 }
 
 TEST_F(UrlTest, HttpsInvalid) {
   auto url =
-      new url::URL("ttps://browser.engineering/examples/example1-simple.html/",
-                   m_http_client);
-  auto resp = url->request();
+      url::URL("ttps://browser.engineering/examples/example1-simple.html/",
+               m_http_client);
+  auto resp = url.request();
 
-  EXPECT_FALSE(resp.has_value());
+  EXPECT_FALSE(resp.is_success());
 }

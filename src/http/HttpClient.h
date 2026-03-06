@@ -11,7 +11,7 @@
 
 namespace http {
 
-static constexpr uint8_t MAX_CONSECUTIVE_REDIRS{5};
+static constexpr uint8_t MAX_CONSECUTIVE_REDIRECTS{5};
 class HttpClient : public IHttpClient {
  public:
   HttpClient();
@@ -20,9 +20,9 @@ class HttpClient : public IHttpClient {
   /**
    * @brief Perform a HTTP GET request
    * @param url URL to request
-   * @return std::optional<HttpResponse> HTTP response if successful,
+   * @return HttpResult HTTP response if successful,
    */
-  std::optional<HttpResponse> get(std::string_view url) override;
+  HttpResult get(std::string_view url) override;
 
  private:
   Logger& logger = Logger::getInstance();
@@ -31,11 +31,6 @@ class HttpClient : public IHttpClient {
   std::unordered_map<std::string, std::pair<BIO*, SSL_CTX*>> m_https_sockets{};
 
   std::unordered_map<std::string, HttpRespCache> m_response_cache;
-
-  // TODO: Refactor redirect logics
-  bool m_last_redirect{};  //< Last request was a redirect
-  HttpReqParams m_last_params{};
-  int m_redirect_counts{};
 
   /**
    * @brief Gets HTTP status code from header
@@ -101,7 +96,7 @@ class HttpClient : public IHttpClient {
    * @return  true if redirect, false otherwise
    */
   inline bool should_redirect(const HttpResponse& r) const {
-    return (r.code >= 300 && r.code <= 399);
+    return (r.status_line.status >= 300 && r.status_line.status <= 399);
   }
 };
 

@@ -17,14 +17,14 @@ class URL : public IUrl {
    * @return std::optional<http::HttpResponse> HTTP response if successful,
    * std::nullopt otherwise
    */
-  std::optional<http::HttpResponse> request();
+  http::HttpResult request();
   /**
    * @brief Show the body content
    * @param body Body content to show
    */
   void show(std::string& body);
 
- private:
+ public:
   struct Data {
     Scheme scheme;
     std::string host;
