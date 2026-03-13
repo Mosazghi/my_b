@@ -1,13 +1,11 @@
 #pragma once
 #include <http/Types.hpp>
-#include <optional>
-#include <string>
 
 namespace url {
 
 class IUrl {
  public:
-  virtual ~IUrl() {};
+  virtual ~IUrl() = default;
   virtual http::HttpResult request() = 0;
 };
 

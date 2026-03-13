@@ -1,8 +1,10 @@
+#pragma once
 #include <regex>
 #include <string>
+#include "const.hpp"
 namespace common {
 
-std::string lex(std::string& body) {
+inline std::string lex(std::string& body) {
   bool in_tag{};
   std::string text{};
 
@@ -24,6 +26,33 @@ std::string lex(std::string& body) {
     }
   }
   return text;
+}
+
+using PositionTextPair = std::tuple<int, int, char>;
+
+inline std::vector<PositionTextPair> layout(std::string& text) {
+  std::vector<PositionTextPair> display_list(text.length());
+
+  auto cursor_x = consts::HSTEP;
+  auto cursor_y = consts::VSTEP;
+
+  for (const auto& c : text) {
+    display_list.emplace_back(cursor_x, cursor_y, c);
+
+    if (c == U'\n') {
+      cursor_x = consts::HSTEP;
+      cursor_y += consts::VSTEP;
+      continue;
+    }
+    if (cursor_x >= consts::WINDOW_WIDTH - consts::HSTEP) {
+      cursor_x = consts::HSTEP;
+      cursor_y += consts::VSTEP;
+    }
+
+    cursor_x += consts::HSTEP;
+  }
+
+  return display_list;
 }
 
 }  // namespace common

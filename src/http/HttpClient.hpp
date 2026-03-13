@@ -15,7 +15,7 @@ static constexpr uint8_t MAX_CONSECUTIVE_REDIRECTS{5};
 class HttpClient : public IHttpClient {
  public:
   HttpClient();
-  ~HttpClient();
+  ~HttpClient() override;
 
   /**
    * @brief Perform a HTTP GET request

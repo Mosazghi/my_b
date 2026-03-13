@@ -6,7 +6,7 @@
 namespace http {
 class IHttpClient {
  public:
-  virtual ~IHttpClient() {};
+  virtual ~IHttpClient() = default;
   virtual http::HttpResult get(std::string_view url) = 0;
 };
 

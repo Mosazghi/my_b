@@ -7,7 +7,7 @@
 namespace http {
 using Headers = std::unordered_map<std::string, std::string>;
 
-enum class HttpMethod { GET, POST, PUT, DELETE };
+enum class HttpMethod : std::uint8_t { GET, POST, PUT, DELETE };
 
 inline const std::string http_method_to_string(HttpMethod method) {
   switch (method) {
@@ -52,7 +52,7 @@ struct HttpRequestBuilder {
     std::string request =
         http_method_to_string(method) + " " + path + " HTTP/1.1\r\n";
     for (const auto& [key, value] : headers) {
-      request += key + ": " + value + "\r\n";
+      request.append(std::format("{}: {}\r\n", key, value));
     }
     request += "\r\n";
     request += body;
@@ -60,7 +60,7 @@ struct HttpRequestBuilder {
   }
 };
 
-enum class HttpPort {
+enum class HttpPort : std::uint16_t {
   HTTP = 80,
   HTTPS = 443,
 };

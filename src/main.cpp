@@ -1,9 +1,10 @@
-#include <assert.h>
 #include <SFML/Graphics.hpp>
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
 #include "browser/Browser.hpp"
+#include "common.hpp"
 #include "http/HttpClient.hpp"
 #include "url/Url.hpp"
 
@@ -45,9 +46,9 @@ int main(int argc, char** argv) {
   auto browser = std::make_unique<browser::Browser>(window);
   auto url = url::URL(url_addr, std::make_shared<http::HttpClient>());
   auto body = url.request();
-  auto res = url.lex(body.response.body);
+  auto text = common::lex(body.response.body);
   browser->load(url);
-  browser->spin(res);
+  browser->spin(text);
   return 0;
 }
 

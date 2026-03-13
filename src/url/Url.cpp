@@ -1,6 +1,5 @@
 #include "url/Url.hpp"
 #include <arpa/inet.h>
-#include <assert.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -8,12 +7,14 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cassert>
 #include <cstring>
 #include <http/HttpClient.hpp>
 #include <http/IHttpClient.hpp>
 #include <iostream>
 #include <optional>
 #include <regex>
+#include <utility>
 #include "file/File.hpp"
 #include "logger.hpp"
 #include "utils.hpp"
@@ -21,7 +22,7 @@
 namespace url {
 
 URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
-    : m_http_client{http_client}, m_url{url} {
+    : m_http_client{std::move(std::move(http_client))}, m_url{url} {
   // Trim url
   utils::trim(m_url);
 
@@ -37,7 +38,7 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
   } else if (scheme == "file") {
     m_data.scheme = Scheme::FILE;
   } else {
-    auto s = m_url.find(":");
+    auto s = m_url.find(':');
     if (s != std::string::npos) {
       auto scheme = m_url.substr(0, s);
       if (scheme == "data") {
@@ -56,9 +57,9 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
   }
 
   if (is_scheme_in(Scheme::DATA)) {
-    auto s1 = m_url.find(":");
+    auto s1 = m_url.find(':');
     auto rest = m_url.substr(s1 + 1);
-    auto s2 = rest.find(",");
+    auto s2 = rest.find(',');
     m_data.data_scheme.protocol = rest.substr(0, s2);
     m_data.data_scheme.data = rest.substr(s2 + 1);
     logger.dbg("DATA SCHEME: {} ({}) :::: {},  {}", m_url, rest,
@@ -66,7 +67,7 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
   }
 }
 
-URL::~URL() {}
+URL::~URL() = default;
 
 // TODO: Refactor to include generics instead
 http::HttpResult URL::request() {
@@ -95,30 +96,6 @@ http::HttpResult URL::request() {
       break;
   }
   return resp;
-}
-
-std::string URL::lex(std::string& body) const {
-  bool in_tag{};
-  std::string text{};
-
-  body = std::regex_replace(body, std::regex("&lt;"), "<");
-  body = std::regex_replace(body, std::regex("&gt;"), ">");
-
-  if (is_scheme_in(Scheme::VIEW_SOURCE)) {
-    std::cout << body;
-    return "";
-  }
-
-  for (const auto& c : body) {
-    if (c == '<') {
-      in_tag = true;
-    } else if (c == '>') {
-      in_tag = false;
-    } else if (!in_tag) {
-      text += c;
-    }
-  }
-  return text;
 }
 
 }  // namespace url

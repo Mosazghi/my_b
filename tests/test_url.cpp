@@ -4,12 +4,12 @@
 
 class UrlTest : public ::testing::Test {
  protected:
-  virtual void SetUp() override {
+  void SetUp() override {
     m_http_client = std::make_shared<http::HttpClient>();
   }
   std::shared_ptr<http::HttpClient> m_http_client;
 
-  virtual void TearDown() override { m_http_client = nullptr; }
+  void TearDown() override { m_http_client = nullptr; }
 };
 
 TEST_F(UrlTest, HttpsValid) {

@@ -5,7 +5,7 @@
 
 class HttpTest : public ::testing::Test {
  protected:
-  virtual void SetUp() override {
+  void SetUp() override {
     m_http_client = std::make_unique<http::HttpClient>();
   }
   std::unique_ptr<http::HttpClient> m_http_client;
