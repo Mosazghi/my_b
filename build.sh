@@ -9,4 +9,3 @@ fi
 
 cmake --build build -- -j "$(nproc)"
 echo "Finished building"
-./build/my_b
