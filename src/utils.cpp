@@ -1,5 +1,5 @@
+#include "utils.hpp"
 #include <zlib.h>
-#include "utils.h"
 #include <algorithm>
 #include <cctype>
 #include <optional>

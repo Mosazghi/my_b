@@ -1,8 +1,6 @@
-#include "url/Url.h"
+#include "url/Url.hpp"
 #include <arpa/inet.h>
 #include <assert.h>
-#include <http/HttpClient.h>
-#include <http/IHttpClient.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -11,12 +9,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cstring>
+#include <http/HttpClient.hpp>
+#include <http/IHttpClient.hpp>
 #include <iostream>
 #include <optional>
 #include <regex>
-#include "file/File.h"
-#include "logger.h"
-#include "utils.h"
+#include "file/File.hpp"
+#include "logger.hpp"
+#include "utils.hpp"
 
 namespace url {
 
@@ -97,14 +97,16 @@ http::HttpResult URL::request() {
   return resp;
 }
 
-void URL::show(std::string& body) {
-  bool in_tag{false};
+std::string URL::lex(std::string& body) const {
+  bool in_tag{};
+  std::string text{};
+
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
 
   if (is_scheme_in(Scheme::VIEW_SOURCE)) {
     std::cout << body;
-    return;
+    return "";
   }
 
   for (const auto& c : body) {
@@ -113,10 +115,10 @@ void URL::show(std::string& body) {
     } else if (c == '>') {
       in_tag = false;
     } else if (!in_tag) {
-      std::cout << c;
+      text += c;
     }
   }
-  std::cout << '\n';
+  return text;
 }
 
 }  // namespace url

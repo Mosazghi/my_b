@@ -5,9 +5,9 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include "IHttpClient.h"
-#include "Types.h"
-#include "logger.h"
+#include "IHttpClient.hpp"
+#include "Types.hpp"
+#include "logger.hpp"
 
 namespace http {
 

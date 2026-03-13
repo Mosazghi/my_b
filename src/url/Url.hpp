@@ -1,10 +1,10 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "IUrl.h"
-#include "Types.h"
-#include "http/IHttpClient.h"
-#include "logger.h"
+#include "IUrl.hpp"
+#include "Types.hpp"
+#include "http/IHttpClient.hpp"
+#include "logger.hpp"
 
 namespace url {
 
@@ -22,7 +22,7 @@ class URL : public IUrl {
    * @brief Show the body content
    * @param body Body content to show
    */
-  void show(std::string& body);
+  std::string lex(std::string& body) const;
 
  public:
   struct Data {

@@ -1,5 +1,5 @@
 #pragma once
-#include <http/Types.h>
+#include <http/Types.hpp>
 #include <optional>
 #include <string>
 
@@ -7,8 +7,7 @@ namespace url {
 
 class IUrl {
  public:
-  virtual ~IUrl(){};
-  virtual void show(std::string& body) = 0;
+  virtual ~IUrl() {};
   virtual http::HttpResult request() = 0;
 };
 

@@ -1,8 +1,8 @@
 #pragma once
-#include <url/Types.h>
 #include <chrono>
 #include <string>
 #include <unordered_map>
+#include <url/Types.hpp>
 
 namespace http {
 using Headers = std::unordered_map<std::string, std::string>;

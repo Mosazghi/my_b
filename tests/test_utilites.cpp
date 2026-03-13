@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <zlib.h>
 #include <string>
-#include "file/File.h"
-#include "test_helpers.h"
-#include "utils.h"
+#include "file/File.hpp"
+#include "test_helpers.hpp"
+#include "utils.hpp"
 
 TEST(Utils, SplitString) {
   auto str1 = "hello,world";

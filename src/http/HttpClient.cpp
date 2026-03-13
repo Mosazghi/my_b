@@ -1,7 +1,6 @@
-#include "HttpClient.h"
+#include "HttpClient.hpp"
 #include <arpa/inet.h>
 #include <assert.h>
-#include <http/HttpClient.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -9,6 +8,7 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <http/HttpClient.hpp>
 // #include <zlib.h>
 #include <algorithm>
 #include <cctype>
@@ -16,9 +16,9 @@
 #include <format>
 #include <optional>
 #include <regex>
-#include "Types.h"
-#include "logger.h"
-#include "utils.h"
+#include "Types.hpp"
+#include "logger.hpp"
+#include "utils.hpp"
 
 namespace http {
 

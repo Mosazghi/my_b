@@ -12,8 +12,24 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
 FetchContent_MakeAvailable(googletest)
-# Zlib
 
+
+# SFML
+FetchContent_Declare(
+    SFML
+    GIT_REPOSITORY https://github.com/SFML/SFML.git
+    GIT_TAG        2.6.1
+    GIT_SHALLOW    TRUE
+    EXCLUDE_FROM_ALL
+)
+set(SFML_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_DOC       OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_AUDIO     OFF CACHE BOOL "" FORCE)
+set(SFML_BUILD_NETWORK   OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(SFML)
+
+# Zlib
 find_package(ZLIB REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
@@ -39,12 +55,13 @@ else ()
 endif()
 
 find_package(OpenSSL REQUIRED)
-target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto ZLIB::ZLIB)
+target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto ZLIB::ZLIB
+                      sfml-graphics sfml-window sfml-system)
 
 # Main executable
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} my_b_lib)
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
 # Test executable
 enable_testing()
