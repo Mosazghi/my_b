@@ -1,4 +1,6 @@
 #pragma once
+#include <SFML/System/String.hpp>
+#include <iostream>
 #include <regex>
 #include <string>
 #include "const.hpp"
@@ -10,6 +12,7 @@ inline std::string lex(std::string& body) {
 
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
+  std::cout << "lexed text: " << body << "\n";
 
   // if (is_scheme_in(Scheme::VIEW_SOURCE)) {
   //   std::cout << body;
@@ -28,15 +31,18 @@ inline std::string lex(std::string& body) {
   return text;
 }
 
-using PositionTextPair = std::tuple<int, int, char>;
+using PositionTextPair = std::tuple<int, int, sf::Uint32>;
 
-inline std::vector<PositionTextPair> layout(std::string& text) {
-  std::vector<PositionTextPair> display_list(text.length());
+inline std::vector<PositionTextPair> layout(const std::string& text,
+                                            int window_width) {
+  std::vector<PositionTextPair> display_list;
+  display_list.reserve(text.size());
+  auto decoded = sf::String::fromUtf8(text.begin(), text.end());
 
   auto cursor_x = consts::HSTEP;
   auto cursor_y = consts::VSTEP;
 
-  for (const auto& c : text) {
+  for (const auto c : decoded) {
     display_list.emplace_back(cursor_x, cursor_y, c);
 
     if (c == U'\n') {
@@ -44,7 +50,7 @@ inline std::vector<PositionTextPair> layout(std::string& text) {
       cursor_y += consts::VSTEP;
       continue;
     }
-    if (cursor_x >= consts::WINDOW_WIDTH - consts::HSTEP) {
+    if (cursor_x >= window_width - consts::HSTEP) {
       cursor_x = consts::HSTEP;
       cursor_y += consts::VSTEP;
     }

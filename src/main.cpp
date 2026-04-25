@@ -45,10 +45,8 @@ int main(int argc, char** argv) {
 
   auto browser = std::make_unique<browser::Browser>(window);
   auto url = url::URL(url_addr, std::make_shared<http::HttpClient>());
-  auto body = url.request();
-  auto text = common::lex(body.response.body);
   browser->load(url);
-  browser->spin(text);
+  browser->spin();
   return 0;
 }
 

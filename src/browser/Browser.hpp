@@ -10,14 +10,17 @@ class Browser {
   explicit Browser(sf::RenderWindow& window);
   void load(url::URL& url);
   ~Browser() = default;
-  void spin(std::string body);
+  void spin();
   void draw(sf::Font& font);
 
  private:
+  int getMaxScroll() const;
+  void relayoutForCurrentWindowWidth();
   void scrolldown();
 
   sf::RenderWindow& m_window;
   std::vector<common::PositionTextPair> m_display_list;
+  std::string m_text_content;
   bool m_running{};
   int m_scroll{};
   Logger& logger = Logger::getInstance();

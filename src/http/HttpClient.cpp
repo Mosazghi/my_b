@@ -1,6 +1,5 @@
 #include "HttpClient.hpp"
 #include <arpa/inet.h>
-#include <cassert>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -9,6 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <algorithm>
+#include <cassert>
 #include <http/HttpClient.hpp>
 // #include <zlib.h>
 #include <algorithm>
@@ -45,7 +45,8 @@ HttpResult HttpClient::get(std::string_view url) {
 
   if (!params.has_value()) {
     logger.err("Failed to get HTTP request parameters from URL");
-    result.errors.emplace_back("Failed to get HTTP request parameters from URL");
+    result.errors.emplace_back(
+        "Failed to get HTTP request parameters from URL");
     return result;
   }
 
@@ -139,7 +140,7 @@ HttpResult HttpClient::get(std::string_view url) {
   int redirects_num = 0;
   auto last_params = params.value();
   while (should_redirect(result.response) &&
-         std::cmp_less(redirects_num , MAX_CONSECUTIVE_REDIRECTS)) {
+         std::cmp_less(redirects_num, MAX_CONSECUTIVE_REDIRECTS)) {
     logger.dbg("Redirecting to {}", result.response.headers.at("location"));
 
     if (!result.response.headers.contains("location")) {
@@ -172,9 +173,11 @@ HttpResult HttpClient::get(std::string_view url) {
       if (std::regex_search(cache_ctrl_str, m, re)) {
         max_age = std::stoi(m[1].str());
       }
-      m_response_cache[cache_key] = HttpRespCache{
-          .headers=result.response.headers, .timestamp=std::chrono::system_clock::now(),
-          .body=result.response.body, .max_age=max_age};
+      m_response_cache[cache_key] =
+          HttpRespCache{.headers = result.response.headers,
+                        .timestamp = std::chrono::system_clock::now(),
+                        .body = result.response.body,
+                        .max_age = max_age};
     }
   }
 
@@ -445,8 +448,9 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
     while (true) {
       // 1. Read the chunk size
       std::string size_line = read_line();
-      if (size_line.empty()) { break;
-}
+      if (size_line.empty()) {
+        break;
+      }
       size_t chunk_size{};
       try {
         chunk_size = std::stoul(size_line, nullptr, 16);
