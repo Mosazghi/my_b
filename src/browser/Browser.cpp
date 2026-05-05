@@ -46,10 +46,10 @@ void Browser::spin() {
           if (m_scroll >= max_scroll) {
             logger.inf("already at the bottom {} {} {} {}", m_scroll,
                        max_scroll, last_elem_y, m_window.getSize().y);
-            // continue;
+            continue;
           }
           logger.inf("scrolled down");
-          m_scroll = std::max(0, m_scroll + SCROLL_STEP);
+          m_scroll = std::min(max_scroll, m_scroll + SCROLL_STEP);
         }
       }
     }
