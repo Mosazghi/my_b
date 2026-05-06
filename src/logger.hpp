@@ -76,14 +76,14 @@ class Logger {
                     short_file_name, format.loc.line(), user_msg);
 
     {
-      std::lock_guard lock(m_mutex);
+      std::scoped_lock lock(m_mutex);
       std::cerr << final_output;
     }
   }
 
   static constexpr std::string_view get_short_file_name(
       const std::string_view& full_file_path) {
-    size_t sep_pos = full_file_path.rfind("/");
+    size_t sep_pos = full_file_path.rfind('/');
 
     if (sep_pos != std::string::npos) {
       return full_file_path.substr(sep_pos + 1);

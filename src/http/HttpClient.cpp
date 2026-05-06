@@ -1,7 +1,5 @@
-#include "HttpClient.h"
+#include "HttpClient.hpp"
 #include <arpa/inet.h>
-#include <assert.h>
-#include <http/HttpClient.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <openssl/bio.h>
@@ -9,6 +7,9 @@
 #include <openssl/ssl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <algorithm>
+#include <cassert>
+#include <http/HttpClient.hpp>
 // #include <zlib.h>
 #include <algorithm>
 #include <cctype>
@@ -16,13 +17,14 @@
 #include <format>
 #include <optional>
 #include <regex>
-#include "Types.h"
-#include "logger.h"
-#include "utils.h"
+#include <utility>
+#include "Types.hpp"
+#include "logger.hpp"
+#include "utils.hpp"
 
 namespace http {
 
-HttpClient::HttpClient() {}
+HttpClient::HttpClient() = default;
 
 HttpClient::~HttpClient() {
   for (const auto& [_, v] : m_http_sockets) {
@@ -43,7 +45,8 @@ HttpResult HttpClient::get(std::string_view url) {
 
   if (!params.has_value()) {
     logger.err("Failed to get HTTP request parameters from URL");
-    result.errors.push_back("Failed to get HTTP request parameters from URL");
+    result.errors.emplace_back(
+        "Failed to get HTTP request parameters from URL");
     return result;
   }
 
@@ -67,7 +70,7 @@ HttpResult HttpClient::get(std::string_view url) {
     }
   }
 
-  auto perform_request = [&](HttpReqParams params) -> HttpResult {
+  auto perform_request = [&](const HttpReqParams& params) -> HttpResult {
     static int num_requests = 0;
     num_requests++;
     std::optional<http::HttpResponse> response{};
@@ -99,7 +102,7 @@ HttpResult HttpClient::get(std::string_view url) {
     HttpResult result{};
 
     if (!response.has_value()) {
-      result.errors.push_back("Request failed");
+      result.errors.emplace_back("Request failed");
       return result;
     }
 
@@ -117,7 +120,7 @@ HttpResult HttpClient::get(std::string_view url) {
       auto decompressed = utils::ungzip(result.response.body);
       if (!decompressed.has_value()) {
         logger.err("Decompressing falied");
-        result.errors.push_back("Decompressing failed");
+        result.errors.emplace_back("Decompressing failed");
       }
 
       result.response.body = decompressed.value_or("");
@@ -137,7 +140,7 @@ HttpResult HttpClient::get(std::string_view url) {
   int redirects_num = 0;
   auto last_params = params.value();
   while (should_redirect(result.response) &&
-         redirects_num < MAX_CONSECUTIVE_REDIRECTS) {
+         std::cmp_less(redirects_num, MAX_CONSECUTIVE_REDIRECTS)) {
     logger.dbg("Redirecting to {}", result.response.headers.at("location"));
 
     if (!result.response.headers.contains("location")) {
@@ -170,9 +173,11 @@ HttpResult HttpClient::get(std::string_view url) {
       if (std::regex_search(cache_ctrl_str, m, re)) {
         max_age = std::stoi(m[1].str());
       }
-      m_response_cache[cache_key] = HttpRespCache{
-          result.response.headers, std::chrono::system_clock::now(),
-          result.response.body, max_age};
+      m_response_cache[cache_key] =
+          HttpRespCache{.headers = result.response.headers,
+                        .timestamp = std::chrono::system_clock::now(),
+                        .body = result.response.body,
+                        .max_age = max_age};
     }
   }
 
@@ -203,7 +208,7 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
 
   std::string_view rest = url.substr(s1 + 3);
 
-  auto s2 = rest.find("/");
+  auto s2 = rest.find('/');
 
   if (scheme == "http") {
     params.scheme = url::Scheme::HTTP;
@@ -223,7 +228,7 @@ std::optional<http::HttpReqParams> HttpClient::get_params_from_url(
   }
 
   // Custom port
-  auto c_port = params.hostname.find_first_of(":");
+  auto c_port = params.hostname.find_first_of(':');
   if (c_port != std::string::npos) {
     params.port = std::stoi(params.hostname.substr(c_port + 1));
     params.hostname = params.hostname.substr(0, c_port);
@@ -293,10 +298,10 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
   std::sregex_iterator end;
 
   for (std::sregex_iterator i = begin; i != end; ++i) {
-    std::smatch match = *i;
+    const std::smatch& match = *i;
 
     std::string key = match.str(1);
-    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+    std::ranges::transform(key, key.begin(), ::tolower);
 
     std::string value = match.str(2);
 
@@ -331,7 +336,7 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
     ctx = SSL_CTX_new(SSLv23_client_method());
   }
 
-  if (ctx == NULL) {
+  if (ctx == nullptr) {
     logger.warn("SSL CTX is null!");
     return {};
   }
@@ -375,10 +380,10 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
   std::sregex_iterator end;
 
   for (std::sregex_iterator i = begin; i != end; ++i) {
-    std::smatch match = *i;
+    const std::smatch& match = *i;
 
     std::string key = match.str(1);
-    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+    std::ranges::transform(key, key.begin(), ::tolower);
 
     std::string value = match.str(2);
 
@@ -420,7 +425,6 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
   std::regex te_regex(R"(Transfer-Encoding:\s*chunked)", std::regex::icase);
   if (std::regex_search(header_buffer, te_regex)) {
     is_chunked = true;
-    logger.dbg("Is chnked");
   }
 
   std::string body_buffer{};
@@ -440,10 +444,12 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
       return line;
     };
 
-    while (1) {
+    while (true) {
       // 1. Read the chunk size
       std::string size_line = read_line();
-      if (size_line.empty()) break;
+      if (size_line.empty()) {
+        break;
+      }
       size_t chunk_size{};
       try {
         chunk_size = std::stoul(size_line, nullptr, 16);

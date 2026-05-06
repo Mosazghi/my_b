@@ -1,11 +1,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "http/HttpClient.h"
-#include "http/Types.h"
+#include "http/HttpClient.hpp"
+#include "http/Types.hpp"
 
 class HttpTest : public ::testing::Test {
  protected:
-  virtual void SetUp() override {
+  void SetUp() override {
     m_http_client = std::make_unique<http::HttpClient>();
   }
   std::unique_ptr<http::HttpClient> m_http_client;
@@ -26,7 +26,7 @@ TEST_F(HttpTest, GetReq404Failure) {
 }
 
 TEST_F(HttpTest, GetReqSuccessHttps) {
-  auto resp = m_http_client->get("https://portfolio.mostes.no/");
+  auto resp = m_http_client->get("https://google.no/");
 
   EXPECT_FALSE(resp.has_error());
   EXPECT_NE(resp.response.body, "");

@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "file/File.h"
-#include "test_helpers.h"
+#include "file/File.hpp"
+#include "test_helpers.hpp"
 
 TEST(FileTest, ReadValidFiles) {
   std::string file_path = get_mock_data_file_path("short-file.txt");

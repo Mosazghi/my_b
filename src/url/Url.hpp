@@ -1,28 +1,23 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "IUrl.h"
-#include "Types.h"
-#include "http/IHttpClient.h"
-#include "logger.h"
+#include "IUrl.hpp"
+#include "Types.hpp"
+#include "http/IHttpClient.hpp"
+#include "logger.hpp"
 
 namespace url {
 
 class URL : public IUrl {
  public:
   URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client);
-  ~URL();
+  ~URL() override;
   /**
    * @brief Perform the request for the URL
    * @return std::optional<http::HttpResponse> HTTP response if successful,
    * std::nullopt otherwise
    */
-  http::HttpResult request();
-  /**
-   * @brief Show the body content
-   * @param body Body content to show
-   */
-  void show(std::string& body);
+  http::HttpResult request() override;
 
  public:
   struct Data {
@@ -46,14 +41,14 @@ class URL : public IUrl {
    * @param scheme Scheme to check
    * @return  bool True if the scheme matches, false otherwise
    */
-  bool is_scheme_in(Scheme s) const { return m_data.scheme == s; }
+  [[nodiscard]] bool is_scheme_in(Scheme s) const { return m_data.scheme == s; }
 
   /**
    * @brief Check if the URL scheme is in the given schemes
    * @param ss Vector of schemes to check
    * @return  bool True if the scheme matches any in the vector, false otherwise
    */
-  bool is_scheme_in(const std::vector<Scheme>& ss) const {
+  [[nodiscard]] bool is_scheme_in(const std::vector<Scheme>& ss) const {
     for (const auto& s : ss) {
       if (m_data.scheme == s) {
         return true;

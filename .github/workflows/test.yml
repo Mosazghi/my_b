@@ -12,10 +12,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ccache cmake ninja-build libssl-dev
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libudev-dev \
+            ccache \
+            cmake \
+            ninja-build \
+            libssl-dev \
+            libfreetype-dev
 
       - name: Create ccache directory
         run: mkdir -p ~/.ccache

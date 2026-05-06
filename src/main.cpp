@@ -1,11 +1,12 @@
-#include <assert.h>
-#include <cstring>
+#include <SFML/Graphics.hpp>
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
-#include <thread>
-#include "http/HttpClient.h"
-#include "url/Url.h"
+#include "browser/Browser.hpp"
+#include "common.hpp"
+#include "http/HttpClient.hpp"
+#include "url/Url.hpp"
 
 static Logger& logger = Logger::getInstance();
 
@@ -13,10 +14,8 @@ static void print_usage();
 static void parse_url(std::string& buffer_url, char** url, int start_idx,
                       int size);
 
-
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
   std::string url_addr{};
-  bool print_output{};
 
   if (argc < 2) {
     std::cout << "Usage: " << argv[0] << " --url <url>\n";
@@ -34,24 +33,20 @@ int main(int argc, char* argv[]) {
     if (arg == "--url" || arg == "-u") {
       parse_url(url_addr, argv, i, argc);
     }
-
-    if (arg == "--show" || arg == "-s") {
-      print_output = true;
-    }
   }
 
   if (url_addr.empty()) {
     logger.err("URL cannot be empty!");
     exit(EXIT_FAILURE);
   }
+  sf::RenderWindow window(sf::VideoMode(1280, 720), "My Browser",
+                          sf::Style::Default | sf::Style::Resize);
+  window.setFramerateLimit(60);
 
-  auto http_client = std::make_shared<http::HttpClient>();
-  url::URL url(url_addr, http_client);
-  auto result = url.request();
-  if (result.is_success() && print_output) {
-    url.show(result.response.body);
-  }
-
+  auto browser = std::make_unique<browser::Browser>(window);
+  auto url = url::URL(url_addr, std::make_shared<http::HttpClient>());
+  browser->load(url);
+  browser->spin();
   return 0;
 }
 
