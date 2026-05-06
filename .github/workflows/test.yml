@@ -25,7 +25,8 @@ jobs:
             ccache \
             cmake \
             ninja-build \
-            libssl-dev
+            libssl-dev \
+            libfreetype-dev
 
       - name: Create ccache directory
         run: mkdir -p ~/.ccache
