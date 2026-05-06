@@ -13,7 +13,7 @@ class UrlTest : public ::testing::Test {
 };
 
 TEST_F(UrlTest, HttpsValid) {
-  auto url = url::URL("https://portfolio.mostes.no/", m_http_client);
+  auto url = url::URL("https://google.no/", m_http_client);
   auto resp = url.request();
 
   // EXPECT_TRUE(resp.has_value());
@@ -22,7 +22,7 @@ TEST_F(UrlTest, HttpsValid) {
 }
 
 TEST_F(UrlTest, HttpsValidNoPathGiven) {
-  auto url = url::URL("https://portfolio.mostes.no", m_http_client);
+  auto url = url::URL("https://google.no", m_http_client);
   auto resp = url.request();
 
   EXPECT_NE(resp.response.body, "");

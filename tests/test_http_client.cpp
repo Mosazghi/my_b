@@ -26,7 +26,7 @@ TEST_F(HttpTest, GetReq404Failure) {
 }
 
 TEST_F(HttpTest, GetReqSuccessHttps) {
-  auto resp = m_http_client->get("https://portfolio.mostes.no/");
+  auto resp = m_http_client->get("https://google.no/");
 
   EXPECT_FALSE(resp.has_error());
   EXPECT_NE(resp.response.body, "");
