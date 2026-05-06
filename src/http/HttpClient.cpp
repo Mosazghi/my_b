@@ -425,7 +425,6 @@ std::pair<std::string, std::string> HttpClient::get_header_body(
   std::regex te_regex(R"(Transfer-Encoding:\s*chunked)", std::regex::icase);
   if (std::regex_search(header_buffer, te_regex)) {
     is_chunked = true;
-    logger.dbg("Is chnked");
   }
 
   std::string body_buffer{};

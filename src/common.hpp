@@ -12,7 +12,6 @@ inline std::string lex(std::string& body) {
 
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
-  std::cout << "lexed text: " << body << "\n";
 
   // if (is_scheme_in(Scheme::VIEW_SOURCE)) {
   //   std::cout << body;

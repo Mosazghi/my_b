@@ -16,7 +16,7 @@ class Browser {
  private:
   int getMaxScroll() const;
   void relayoutForCurrentWindowWidth();
-  void scrolldown();
+  void scrolldown(const sf::Event& event);
 
   sf::RenderWindow& m_window;
   std::vector<common::PositionTextPair> m_display_list;
