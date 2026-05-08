@@ -11,7 +11,8 @@ sf::Texture TextureManager::get(const std::string& id) {
   if (exists) {
     return m_texture_cache.at(id);
   }
-  std::string texture_path = std::format("assets/emojis/{}.png", id);
+
+  std::string texture_path = std::format("assets/emojis/{}.PNG", id);
   sf::Texture texture{};
   texture.loadFromFile(texture_path);
   m_texture_cache[id] = texture;

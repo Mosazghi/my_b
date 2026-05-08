@@ -4,7 +4,6 @@
 #include <memory>
 #include <string>
 #include "browser/Browser.hpp"
-#include "common.hpp"
 #include "http/HttpClient.hpp"
 #include "url/Url.hpp"
 

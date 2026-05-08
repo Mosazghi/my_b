@@ -5,6 +5,7 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <openssl/tls1.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <algorithm>
@@ -24,7 +25,11 @@
 
 namespace http {
 
-HttpClient::HttpClient() = default;
+HttpClient::HttpClient() {
+  SSL_library_init();
+  SSL_load_error_strings();
+  OpenSSL_add_all_algorithms();
+}
 
 HttpClient::~HttpClient() {
   for (const auto& [_, v] : m_http_sockets) {
@@ -324,14 +329,10 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
   auto it = m_https_sockets.find(key);
   bool cache_hit = it != m_https_sockets.end();
 
-  SSL_library_init();
-  SSL_load_error_strings();
-  OpenSSL_add_all_algorithms();
-
   if (cache_hit) {
     ctx = m_https_sockets.at(key).second;
   } else {
-    ctx = SSL_CTX_new(SSLv23_client_method());
+    ctx = SSL_CTX_new(TLS_client_method());
   }
 
   if (ctx == nullptr) {
@@ -346,10 +347,20 @@ std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
     BIO_set_conn_hostname(
         bio, std::format("{}:{}", params.hostname, std::to_string(params.port))
                  .c_str());
+    SSL* ssl;
+    BIO_get_ssl(bio, &ssl);
+
+    if (ssl == nullptr) {
+      logger.warn("SSL is null!");
+      return {};
+    }
+
+    SSL_set_tlsext_host_name(ssl, params.hostname.c_str());
 
     if (BIO_do_connect(bio) <= 0) {
       logger.warn("Failed connection");
-      return std::nullopt;
+      ERR_print_errors_fp(stderr);
+      return {};
     }
   }
 
