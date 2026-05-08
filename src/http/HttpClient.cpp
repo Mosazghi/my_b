@@ -133,7 +133,7 @@ HttpResult HttpClient::get(std::string_view url) {
   result = perform_request(params.value());
 
   if (result.has_error()) {
-    logger.err("Some error occurred");
+    logger.err("Some error occurred  {}", result.errors.at(0));
     return result;
   }
 
@@ -149,7 +149,6 @@ HttpResult HttpClient::get(std::string_view url) {
 
     std::string loc;
     loc = result.response.headers.at("location");
-    // m_last_redirect = true;
     if (loc.at(0) == '/') {
       last_params = params.value();
       last_params.path = loc;
@@ -158,7 +157,6 @@ HttpResult HttpClient::get(std::string_view url) {
     }
 
     result = perform_request(last_params);
-    // result.redirect_count++;
   }
 
   const bool should_cache = !m_response_cache.contains(cache_key) &&

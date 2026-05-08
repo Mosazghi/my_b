@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   auto url = url::URL(url_addr, std::make_shared<http::HttpClient>());
   browser->load(url);
   browser->spin();
+
   return 0;
 }
 

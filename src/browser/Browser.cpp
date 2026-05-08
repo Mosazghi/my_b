@@ -1,15 +1,18 @@
 #include "Browser.hpp"
 #include <SFML/Graphics.hpp>
+#include <sstream>
+#include <vector>
 #include "SFML/Graphics/RectangleShape.hpp"
+#include "SFML/Graphics/Sprite.hpp"
+#include "SFML/Graphics/Texture.hpp"
 #include "SFML/Graphics/View.hpp"
 #include "const.hpp"
+#include "texture-manager/TextureManager.h"
 #include "url/Url.hpp"
 namespace browser {
 
 Browser::Browser(sf::RenderWindow& window) : m_window{window}, m_running{true} {
-  if (!m_font.loadFromFile(
-          "/usr/share/fonts/google-noto-sans-mono-cjk-vf-fonts/"
-          "NotoSansMonoCJK-VF.ttc")) {
+  if (!m_font.loadFromFile("/usr/share/fonts/hack/Hack-Italic.ttf")) {
     logger.err("Error loading font\n");
     m_running = false;
     return;
@@ -51,6 +54,7 @@ void Browser::spin() {
     }
 
     m_window.clear();
+
     draw();
 
     m_window.display();
@@ -60,7 +64,7 @@ void Browser::spin() {
 void Browser::draw() {
   constexpr auto scroll_bar_width{20};
   // Text
-  for (const auto& [x, y, c] : m_display_list) {
+  for (const auto& [x, y, type] : m_display_list) {
     if (y > static_cast<int>(m_scroll + m_window.getSize().y)) {
       continue;
     }
@@ -68,11 +72,30 @@ void Browser::draw() {
       continue;
     }
 
-    sf::String glyph(c);
-    sf::Text ch(glyph, m_font, 12);
-    ch.setFillColor(sf::Color::White);
-    ch.setPosition(x - scroll_bar_width, y - m_scroll);
-    m_window.draw(ch);
+    if (type.type == common::TextureType::TEXT) {
+      sf::String glyph(type.value);
+      sf::Text ch(glyph, m_font, 12);
+      ch.setFillColor(sf::Color::White);
+      ch.setPosition(x - scroll_bar_width, y - m_scroll);
+      m_window.draw(ch);
+    } else {
+      // auto
+
+      sf::String temp(type.value);
+      std::string utf8_char = temp.toAnsiString();
+
+      std::stringstream s;
+
+      s << std::hex << std::uppercase << std::setfill('0') << std::setw(5)
+        << static_cast<uint32_t>(type.value) << std::dec;
+
+      std::string id = s.str();
+      auto texture = texture::TextureManager::get(id);
+      sf::Sprite emoji(texture);
+      emoji.setPosition(x - scroll_bar_width, y - m_scroll);
+      emoji.setScale(0.8f, 0.8f);
+      m_window.draw(emoji);
+    }
   }
   // Scrollbar container
   sf::RectangleShape scroll_bar_container(
@@ -106,19 +129,6 @@ void Browser::scrolldown(const sf::Event& event) {
                      event.mouseWheelScroll.delta < 0) ||
                     (event.type == sf::Event::KeyPressed &&
                      event.key.code == sf::Keyboard::Down);
-  // get x and y of the mouse position relative to the window
-  if (event.type == sf::Event::MouseButtonPressed &&
-      event.mouseButton.button == sf::Mouse::Left) {
-    if (m_scroll_bar.getGlobalBounds().contains(
-            static_cast<float>(event.mouseButton.x),
-            static_cast<float>(event.mouseButton.y))) {
-      logger.dbg("Clicked on scroll bar");
-      m_scroll_bar.setFillColor(sf::Color::Red);
-    } else {
-      logger.dbg("Clicked outside scroll bar");
-      m_scroll_bar.setFillColor(sf::Color::White);
-    }
-  }
 
   if (scrollUp) {
     m_scroll = std::max(0, m_scroll - SCROLL_STEP);
