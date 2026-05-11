@@ -1,11 +1,13 @@
 #include "Browser.hpp"
 #include <SFML/Graphics.hpp>
 #include <sstream>
+#include <utility>
 #include <vector>
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/Sprite.hpp"
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/Graphics/View.hpp"
+#include "SFML/Window/Event.hpp"
 #include "const.hpp"
 #include "texture-manager/TextureManager.h"
 #include "url/Url.hpp"
@@ -17,6 +19,7 @@ Browser::Browser(sf::RenderWindow& window) : m_window{window}, m_running{true} {
     m_running = false;
     return;
   }
+  register_event_handlers();
 }
 
 void Browser::load(url::URL& url) {
@@ -25,32 +28,59 @@ void Browser::load(url::URL& url) {
   m_display_list = common::layout(m_text_content, m_window.getSize().x);
 }
 
+void Browser::register_event_handlers() {
+  register_callback(sf::Event::EventType::Closed, [&](const sf::Event&) {
+    m_running = false;
+    m_window.close();
+  });
+
+  register_callback(sf::Event::EventType::KeyPressed, [&](const sf::Event& e) {
+    if (e.key.code == sf::Keyboard::Escape) {
+      m_running = false;
+      m_window.close();
+    }
+  });
+
+  register_callback(sf::Event::EventType::Resized, [&](const sf::Event& e) {
+    sf::FloatRect visibleArea(0, 0, e.size.width, e.size.height);
+    m_window.setView(sf::View(visibleArea));
+    relayout_for_current_window_width();
+  });
+
+  register_callback(sf::Event::EventType::MouseWheelScrolled,
+                    [&](const sf::Event& e) { mouse_scroll(e); });
+  register_callback(sf::Event::EventType::MouseMoved,
+                    [&](const sf::Event& e) { mouse_hold_scroll(e); });
+  register_callback(sf::Event::EventType::MouseButtonPressed,
+                    [&](const sf::Event& e) { mouse_hold_scroll(e); });
+  register_callback(sf::Event::EventType::MouseButtonReleased,
+                    [&](const sf::Event& e) { mouse_hold_scroll(e); });
+}
+
+void Browser::register_callback(sf::Event::EventType event, EventCallback cb) {
+  m_event_callbacks[event].push_back(std::move(cb));
+}
+
+void Browser::dispatch_event(const sf::Event& event) {
+  auto it = m_event_callbacks.find(event.type);
+  if (it == m_event_callbacks.end()) {
+    return;
+  }
+  for (const auto& cb : it->second) {
+    cb(event);
+  }
+}
+
 void Browser::spin() {
   while (m_running && m_window.isOpen()) {
     sf::Event event;
     while (m_window.pollEvent(event)) {
-      auto shouldClose = event.type == sf::Event::Closed ||
-                         (event.type == sf::Event::KeyPressed &&
-                          event.key.code == sf::Keyboard::Escape);
-
-      if (shouldClose) {
-        m_running = false;
-        m_window.close();
-      }
-
-      if (event.type == sf::Event::Resized) {
-        sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
-        m_window.setView(sf::View(visibleArea));
-        relayout_for_current_window_width();
-      }
-
-      scrolldown_event(event);
+      std::cout << "Eventtype: " << event.type << '\n';
+      dispatch_event(event);
     }
 
     m_window.clear();
-
     draw();
-
     m_window.display();
   }
 }
@@ -113,17 +143,7 @@ void Browser::relayout_for_current_window_width() {
   m_display_list = common::layout(m_text_content, m_window.getSize().x);
 }
 
-void Browser::scrolldown_event(const sf::Event& event) {
-  bool scrollUp = (event.type == sf::Event::MouseWheelScrolled &&
-                   event.mouseWheelScroll.delta > 0) ||
-                  (event.type == sf::Event::KeyPressed &&
-                   event.key.code == sf::Keyboard::Up);
-  bool scrollDown = (event.type == sf::Event::MouseWheelScrolled &&
-                     event.mouseWheelScroll.delta < 0) ||
-                    (event.type == sf::Event::KeyPressed &&
-                     event.key.code == sf::Keyboard::Down);
-
-  // TODO: Refactor to include a state for scroll thumb being held down
+void Browser::mouse_hold_scroll(const sf::Event& event) {
   auto mouse_pos = sf::Mouse::getPosition(m_window);
   static bool is_scrolling = false;
   if (event.type == sf::Event::MouseButtonPressed &&
@@ -140,20 +160,22 @@ void Browser::scrolldown_event(const sf::Event& event) {
   if (is_scrolling) {
     static int last_mouse_y = mouse_pos.y;
     int delta_y = mouse_pos.y - last_mouse_y;
+    std::cout << "delta: \t" << delta_y << '\n';
     if (delta_y != 0) {
       ScrollDirection direction =
           delta_y > 0 ? ScrollDirection::DOWN : ScrollDirection::UP;
-      scrolldown(direction, std::abs(delta_y) * 5);
+      scrolldown(direction);
       last_mouse_y = mouse_pos.y;
     }
+  }
+}
 
-    return;
-  }
-  if (scrollUp) {
-    scrolldown(ScrollDirection::UP);
-  } else if (scrollDown) {
-    scrolldown(ScrollDirection::DOWN);
-  }
+void Browser::mouse_scroll(const sf::Event& event) {
+  ScrollDirection dir = event.mouseWheelScroll.delta > 0
+                            ? ScrollDirection::UP
+                            : ScrollDirection::DOWN;
+
+  scrolldown(dir);
 }
 
 void Browser::scrolldown(ScrollDirection direction, const int scroll_step) {
