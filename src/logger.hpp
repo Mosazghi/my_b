@@ -1,12 +1,14 @@
 #pragma once
 #include <chrono>
+#include <cstdint>
 #include <format>
 #include <iostream>
 #include <mutex>
 #include <source_location>
 #include <string_view>
 
-enum class LogLevel { DBG, INFO, WARN, ERROR };
+enum class LogLevel : std::uint8_t { DBG, INFO, WARN, ERROR };
+static LogLevel log_level{LogLevel::DBG};
 
 class Logger {
  public:
@@ -17,6 +19,7 @@ class Logger {
     static Logger instance;
     return instance;
   }
+  static void SetLogLevel(LogLevel lvl) { log_level = lvl; }
 
   struct LogFormat {
     std::string_view fmt;
@@ -50,7 +53,6 @@ class Logger {
 #endif
   }
 
- private:
   // Enforce singleton pattern
   Logger() = default;
   ~Logger() = default;
@@ -59,8 +61,12 @@ class Logger {
   Logger(Logger&&) = delete;
   Logger& operator=(Logger&&) = delete;
 
+ private:
   template <typename... Args>
   void log(LogLevel lvl, const LogFormat& format, Args&&... args) {
+    if (lvl < log_level) {
+      return;
+    }
     const auto time =
         std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
 
