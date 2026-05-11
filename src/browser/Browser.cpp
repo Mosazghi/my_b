@@ -17,8 +17,6 @@ Browser::Browser(sf::RenderWindow& window) : m_window{window}, m_running{true} {
     m_running = false;
     return;
   }
-
-  m_scroll_bar.setFillColor(sf::Color::White);
 }
 
 void Browser::load(url::URL& url) {
@@ -90,29 +88,24 @@ void Browser::draw() {
       m_window.draw(emoji);
     }
   }
-  // Scrollbar container
   float last_elem_y = std::get<1>(m_display_list.back());
   float window_y = m_window.getSize().y;
   if (last_elem_y <= window_y) {
     return;
   }
-  sf::RectangleShape scroll_bar_container(
-      sf::Vector2f(scroll_bar_width, m_window.getSize().y));
-  const auto mouse_pos = sf::Mouse::getPosition(m_window);
-  scroll_bar_container.setFillColor(sf::Color(128, 128, 128));
-  scroll_bar_container.setPosition(m_window.getSize().x - scroll_bar_width, 0);
-  if (scroll_bar_container.getGlobalBounds().contains(mouse_pos.x,
-                                                      mouse_pos.y)) {
-    scroll_bar_container.setFillColor(sf::Color(192, 192, 192));
-  }
-  m_window.draw(scroll_bar_container);
-
   // Scrollbar
   const int scroll_bar_height = window_y * (window_y / last_elem_y);
   const int scroll_bar_y = m_scroll * (window_y / last_elem_y);
   m_scroll_bar.setSize(sf::Vector2f(scroll_bar_width, scroll_bar_height));
   m_scroll_bar.setPosition(m_window.getSize().x - scroll_bar_width,
                            scroll_bar_y);
+
+  const auto mouse_pos = sf::Mouse::getPosition(m_window);
+  if (m_scroll_bar.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y)) {
+    m_scroll_bar.setFillColor(sf::Color::White);
+  } else {
+    m_scroll_bar.setFillColor(sf::Color(192, 192, 192));
+  }
   m_window.draw(m_scroll_bar);
 }
 
@@ -130,8 +123,6 @@ void Browser::scrolldown_event(const sf::Event& event) {
                     (event.type == sf::Event::KeyPressed &&
                      event.key.code == sf::Keyboard::Down);
 
-  // while scroll_thumb is held down with left button scroll according to mouse
-  // movement
   // TODO: Refactor to include a state for scroll thumb being held down
   auto mouse_pos = sf::Mouse::getPosition(m_window);
   static bool is_scrolling = false;
@@ -152,9 +143,11 @@ void Browser::scrolldown_event(const sf::Event& event) {
     if (delta_y != 0) {
       ScrollDirection direction =
           delta_y > 0 ? ScrollDirection::DOWN : ScrollDirection::UP;
-      scrolldown(direction);
+      scrolldown(direction, std::abs(delta_y) * 5);
       last_mouse_y = mouse_pos.y;
     }
+
+    return;
   }
   if (scrollUp) {
     scrolldown(ScrollDirection::UP);
