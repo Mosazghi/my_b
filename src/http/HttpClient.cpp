@@ -138,7 +138,11 @@ HttpResult HttpClient::get(std::string_view url) {
   result = perform_request(params.value());
 
   if (result.has_error()) {
-    logger.err("Some error occurred  {}", result.errors.at(0));
+    if (!result.errors.empty()) {
+      logger.err("An error occurred during request: {}", result.errors.back());
+    } else {
+      logger.err("An unknown error occurred during request.");
+    }
     return result;
   }
 
