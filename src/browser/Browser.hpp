@@ -3,6 +3,7 @@
 #include <common.hpp>
 #include <cstdint>
 #include <functional>
+#include <initializer_list>
 #include <unordered_map>
 #include <vector>
 #include "SFML/Graphics/Font.hpp"
@@ -38,6 +39,8 @@ class Browser {
 
   void register_event_handlers();
   void register_callback(sf::Event::EventType event, EventCallback cb);
+  void register_callback(std::initializer_list<sf::Event::EventType> events,
+                         EventCallback cb);
   void mouse_hold_scroll(const sf::Event& event);
   void dispatch_event(const sf::Event& event);
   std::unordered_map<sf::Event::EventType, std::vector<EventCallback>>

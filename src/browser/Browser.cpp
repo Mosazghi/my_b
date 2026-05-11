@@ -49,16 +49,21 @@ void Browser::register_event_handlers() {
 
   register_callback(sf::Event::EventType::MouseWheelScrolled,
                     [&](const sf::Event& e) { mouse_scroll(e); });
-  register_callback(sf::Event::EventType::MouseMoved,
-                    [&](const sf::Event& e) { mouse_hold_scroll(e); });
-  register_callback(sf::Event::EventType::MouseButtonPressed,
-                    [&](const sf::Event& e) { mouse_hold_scroll(e); });
-  register_callback(sf::Event::EventType::MouseButtonReleased,
+  register_callback({sf::Event::EventType::MouseMoved,
+                     sf::Event::EventType::MouseButtonPressed,
+                     sf::Event::EventType::MouseButtonReleased},
                     [&](const sf::Event& e) { mouse_hold_scroll(e); });
 }
 
 void Browser::register_callback(sf::Event::EventType event, EventCallback cb) {
   m_event_callbacks[event].push_back(std::move(cb));
+}
+
+void Browser::register_callback(
+    std::initializer_list<sf::Event::EventType> events, EventCallback cb) {
+  for (const auto& event : events) {
+    m_event_callbacks[event].push_back(cb);
+  }
 }
 
 void Browser::dispatch_event(const sf::Event& event) {
@@ -75,7 +80,6 @@ void Browser::spin() {
   while (m_running && m_window.isOpen()) {
     sf::Event event;
     while (m_window.pollEvent(event)) {
-      std::cout << "Eventtype: " << event.type << '\n';
       dispatch_event(event);
     }
 
@@ -150,17 +154,14 @@ void Browser::mouse_hold_scroll(const sf::Event& event) {
       event.mouseButton.button == sf::Mouse::Left &&
       m_scroll_bar.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y)) {
     is_scrolling = true;
-    logger.dbg("Scrolling Mouse Y: {}", mouse_pos.y);
   } else if (event.type == sf::Event::MouseButtonReleased &&
              event.mouseButton.button == sf::Mouse::Left) {
     is_scrolling = false;
-    logger.dbg("Stopped Scrolling");
   }
 
   if (is_scrolling) {
     static int last_mouse_y = mouse_pos.y;
     int delta_y = mouse_pos.y - last_mouse_y;
-    std::cout << "delta: \t" << delta_y << '\n';
     if (delta_y != 0) {
       ScrollDirection direction =
           delta_y > 0 ? ScrollDirection::DOWN : ScrollDirection::UP;
