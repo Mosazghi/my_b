@@ -1,0 +1,7 @@
+[
+  {
+    "label": "Build",
+    "command": "cmake --build build",
+    "use_new_terminal": true,
+  },
+]

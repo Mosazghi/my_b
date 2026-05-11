@@ -31,6 +31,8 @@ FetchContent_MakeAvailable(SFML)
 
 # Zlib
 find_package(ZLIB REQUIRED)
+# ICU
+find_package(ICU REQUIRED COMPONENTS uc)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
@@ -56,7 +58,7 @@ endif()
 
 find_package(OpenSSL REQUIRED)
 target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto ZLIB::ZLIB
-                      sfml-graphics sfml-window sfml-system)
+                      sfml-graphics sfml-window sfml-system ICU::uc)
 
 # Main executable
 add_executable(${PROJECT_NAME} src/main.cpp)

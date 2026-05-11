@@ -1,8 +1,11 @@
 #pragma once
+#include <unicode/uchar.h>  // Main ICU header for character properties
+#include <unicode/urename.h>
 #include <SFML/System/String.hpp>
-#include <iostream>
+#include <cstdint>
 #include <regex>
 #include <string>
+#include "SFML/Config.hpp"
 #include "const.hpp"
 namespace common {
 
@@ -30,19 +33,38 @@ inline std::string lex(std::string& body) {
   return text;
 }
 
-using PositionTextPair = std::tuple<int, int, sf::Uint32>;
+enum class TextureType : std::uint8_t { EMOJI, TEXT };
+struct DecodedType {
+  TextureType type;
+  sf::Uint32 value{};
+};
+using PositionTextPair = std::tuple<int, int, DecodedType>;
+
+inline bool isEmoji(sf::Uint32 codepoint) {
+  auto c = static_cast<UChar32>(codepoint);
+  return u_hasBinaryProperty(c, UCHAR_EMOJI_PRESENTATION);
+}
 
 inline std::vector<PositionTextPair> layout(const std::string& text,
                                             int window_width) {
   std::vector<PositionTextPair> display_list;
+  if (text.empty()) {
+    return display_list;
+  }
   display_list.reserve(text.size());
-  auto decoded = sf::String::fromUtf8(text.begin(), text.end());
+  sf::String decoded = sf::String::fromUtf8(text.begin(), text.end());
 
   auto cursor_x = consts::HSTEP;
   auto cursor_y = consts::VSTEP;
 
-  for (const auto c : decoded) {
-    display_list.emplace_back(cursor_x, cursor_y, c);
+  for (const sf::Uint32 c : decoded) {
+    DecodedType type{.type = TextureType::TEXT, .value = c};
+    if (isEmoji(c)) {
+      sf::String emojiStr(c);
+      std::string utf8Emoji = emojiStr.toAnsiString();
+      type.type = TextureType::EMOJI;
+    }
+    display_list.emplace_back(cursor_x, cursor_y, type);
 
     if (c == U'\n') {
       cursor_x = consts::HSTEP;

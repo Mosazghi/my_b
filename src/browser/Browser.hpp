@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <common.hpp>
+#include <cstdint>
 #include "SFML/Graphics/Font.hpp"
 #include "logger.hpp"
 #include "url/Url.hpp"
@@ -16,8 +17,10 @@ class Browser {
 
  private:
   int getMaxScroll() const;
-  void relayoutForCurrentWindowWidth();
-  void scrolldown(const sf::Event& event);
+  void relayout_for_current_window_width();
+  void scrolldown_event(const sf::Event& event);
+  enum class ScrollDirection : std::uint8_t { UP, DOWN };
+  void scrolldown(ScrollDirection direction, const int scroll_step = 100);
 
   sf::RenderWindow& m_window;
   sf::Font m_font;
