@@ -3,10 +3,10 @@ project(my_b LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Google test
 include(FetchContent)
 set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/_deps" CACHE PATH "FetchContent base dir")
 
+# Google test
 FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
@@ -45,15 +45,13 @@ list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
 
 add_library(my_b_lib ${SOURCES})
 
-# Apply compile options to library
 target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic)
 
-# Debug definition
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "Debug ON")
-    target_compile_definitions(my_b_lib PUBLIC DEBUG=1)
+  message(STATUS "Debug ON")
+  target_compile_definitions(my_b_lib PUBLIC DEBUG=1)
 else ()
-    message(STATUS "Debug off")
+  message(STATUS "Debug off")
 endif()
 
 find_package(OpenSSL REQUIRED)

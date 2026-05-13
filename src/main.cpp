@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     logger.err("URL cannot be empty!");
     exit(EXIT_FAILURE);
   }
-  sf::RenderWindow window(sf::VideoMode(1280, 720), "My Browser",
+  sf::RenderWindow window(sf::VideoMode({1280, 720}), "My Browser",
                           sf::Style::Default | sf::Style::Resize);
   window.setFramerateLimit(60);
 

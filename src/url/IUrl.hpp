@@ -1,6 +1,6 @@
 #pragma once
-#include <http/Types.hpp>
 
+#include "http/HttpRequest.hpp"
 namespace url {
 
 class IUrl {

@@ -8,12 +8,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cassert>
-#include <cstring>
 #include <http/HttpClient.hpp>
 #include <http/IHttpClient.hpp>
-#include <iostream>
 #include <optional>
-#include <regex>
 #include <utility>
 #include "file/File.hpp"
 #include "logger.hpp"
@@ -47,6 +44,8 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
         m_data.scheme = Scheme::VIEW_SOURCE;
         m_url = m_url.substr(s + 1);
       }
+    } else {
+      logger.err("Invalid URL");
     }
   }
 
@@ -96,6 +95,15 @@ http::HttpResult URL::request() {
       break;
   }
   return resp;
+}
+
+bool URL::is_scheme_in(Scheme s) const { return m_data.scheme == s; }
+
+bool URL::is_scheme_in(const std::vector<Scheme>& ss) const {
+  for (const auto& s : ss) {
+    if (m_data.scheme == s) return true;
+  }
+  return false;
 }
 
 }  // namespace url

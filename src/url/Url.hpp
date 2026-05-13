@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include "IUrl.hpp"
-#include "Types.hpp"
+#include "http/HttpRequest.hpp"
 #include "http/IHttpClient.hpp"
 #include "logger.hpp"
 
@@ -41,20 +41,13 @@ class URL : public IUrl {
    * @param scheme Scheme to check
    * @return  bool True if the scheme matches, false otherwise
    */
-  [[nodiscard]] bool is_scheme_in(Scheme s) const { return m_data.scheme == s; }
+  [[nodiscard]] bool is_scheme_in(Scheme s) const;
 
   /**
    * @brief Check if the URL scheme is in the given schemes
    * @param ss Vector of schemes to check
    * @return  bool True if the scheme matches any in the vector, false otherwise
    */
-  [[nodiscard]] bool is_scheme_in(const std::vector<Scheme>& ss) const {
-    for (const auto& s : ss) {
-      if (m_data.scheme == s) {
-        return true;
-      }
-    }
-    return false;
-  }
+  [[nodiscard]] bool is_scheme_in(const std::vector<Scheme>& ss) const;
 };
 }  // namespace url

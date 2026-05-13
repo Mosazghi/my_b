@@ -1,12 +1,10 @@
 #pragma once
 #include <netdb.h>
 #include <openssl/types.h>
-#include <format>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include "IHttpClient.hpp"
-#include "Types.hpp"
 #include "logger.hpp"
 
 namespace http {
@@ -86,18 +84,14 @@ class HttpClient : public IHttpClient {
    * @param p HTTP request parameters
    * @return std::string Cache key
    */
-  inline std::string get_cache_key(const HttpReqParams& p) const {
-    return std::format("{}:{}", p.hostname, p.port);
-  }
+  std::string get_cache_key(const HttpReqParams& p) const;
 
   /**
    * @brief Determine if the response is a redirect
    * @param r  HTTP response
    * @return  true if redirect, false otherwise
    */
-  inline bool should_redirect(const HttpResponse& r) const {
-    return (r.status_line.status >= 300 && r.status_line.status <= 399);
-  }
+  bool should_redirect(const HttpResponse& r) const;
 };
 
 }  // namespace http

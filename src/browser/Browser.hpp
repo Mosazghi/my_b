@@ -7,8 +7,10 @@
 #include <unordered_map>
 #include <vector>
 #include "SFML/Graphics/Font.hpp"
+#include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Window/Event.hpp"
 #include "logger.hpp"
+#include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
 namespace browser {
 
@@ -22,27 +24,23 @@ class Browser {
   void draw();
 
  private:
-  int getMaxScroll() const;
   void relayout_for_current_window_width();
-  void mouse_scroll(const sf::Event& event);
-  enum class ScrollDirection : std::uint8_t { UP, DOWN };
-  void scrolldown(ScrollDirection direction, const int scroll_step = 100);
+  void register_event_handlers();
+  void register_callback(sf::Event::EventType event, const EventCallback& cb);
+  void register_callback(std::initializer_list<sf::Event::EventType> events,
+                         const EventCallback& cb);
+  void dispatch_event(const sf::Event& event);
+  void update_ui_elements();
 
   sf::RenderWindow& m_window;
   sf::Font m_font;
   std::vector<common::PositionTextPair> m_display_list;
   std::string m_text_content;
   bool m_running{};
-  int m_scroll{};
-  sf::RectangleShape m_scroll_bar{};
-  Logger& logger = Logger::getInstance();
 
-  void register_event_handlers();
-  void register_callback(sf::Event::EventType event, EventCallback cb);
-  void register_callback(std::initializer_list<sf::Event::EventType> events,
-                         EventCallback cb);
-  void mouse_hold_scroll(const sf::Event& event);
-  void dispatch_event(const sf::Event& event);
+  Logger& logger = Logger::getInstance();
+  ui::ScrollBar m_scroll_bar;
+
   std::unordered_map<sf::Event::EventType, std::vector<EventCallback>>
       m_event_callbacks;
 };

@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include "http/HttpClient.hpp"
-#include "http/Types.hpp"
+#include "http/HttpRequest.hpp"
 
 class HttpTest : public ::testing::Test {
  protected:

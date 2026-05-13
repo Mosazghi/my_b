@@ -19,11 +19,19 @@
 #include <optional>
 #include <regex>
 #include <utility>
-#include "Types.hpp"
+#include "HttpRequest.hpp"
 #include "logger.hpp"
 #include "utils.hpp"
 
 namespace http {
+
+std::string HttpClient::get_cache_key(const HttpReqParams& p) const {
+  return std::format("{}:{}", p.hostname, p.port);
+}
+
+bool HttpClient::should_redirect(const HttpResponse& r) const {
+  return (r.status_line.status >= 300 && r.status_line.status <= 399);
+}
 
 HttpClient::HttpClient() {
   SSL_library_init();
@@ -45,15 +53,16 @@ HttpClient::~HttpClient() {
 
 HttpResult HttpClient::get(std::string_view url) {
   auto params = get_params_from_url(url);
-  auto cache_key = get_cache_key(params.value());  // Add null check?
   HttpResult result{};
 
+  logger.inf("LFG");
   if (!params.has_value()) {
     logger.err("Failed to get HTTP request parameters from URL");
     result.errors.emplace_back(
         "Failed to get HTTP request parameters from URL");
     return result;
   }
+  auto cache_key = get_cache_key(params.value());  // Add null check?
 
   if (m_response_cache.contains(cache_key)) {
     auto cache = m_response_cache.at(cache_key);

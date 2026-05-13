@@ -1,7 +1,5 @@
 #pragma once
-#include <optional>
-#include <string>
-#include "Types.hpp"
+#include "HttpRequest.hpp"
 
 namespace http {
 class IHttpClient {
