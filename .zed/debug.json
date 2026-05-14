@@ -9,9 +9,6 @@
     "adapter": "CodeLLDB",
     "program": "/home/mosa/Projects/my_b/build/my_b",
     "cwd": "/home/mosa/Projects/my_b",
-    "args": [
-      "--url",
-      "https://unicode.org/emoji/charts/full-emoji-listsds.html",
-    ],
+    "args": ["--url", "hattps://browser.engineering/graphics.html"],
   },
 ]

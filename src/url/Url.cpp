@@ -12,8 +12,10 @@
 #include <http/IHttpClient.hpp>
 #include <optional>
 #include <utility>
+#include "SFML/Window/Keyboard.hpp"
 #include "file/File.hpp"
 #include "logger.hpp"
+#include "url/Types.hpp"
 #include "utils.hpp"
 
 namespace url {
@@ -43,6 +45,8 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
       } else if (scheme == "view-source") {
         m_data.scheme = Scheme::VIEW_SOURCE;
         m_url = m_url.substr(s + 1);
+      } else {
+        logger.err("Unsupported URL scheme: {}", scheme);
       }
     } else {
       logger.err("Invalid URL");
@@ -72,6 +76,13 @@ URL::~URL() = default;
 http::HttpResult URL::request() {
   http::HttpResult resp{};
 
+  const auto apply_about_blank_details = [](http::HttpResult& r) {
+    r.response.status_line = http::HttpStatusLine{
+        .version = "HTTP/1.1", .explanation = "OK", .status = 200};
+    r.response.body = "<html><body><h1>About Blank</h1></body></html>";
+    r.response.headers["content-type"] = "text/html";
+  };
+
   switch (m_data.scheme) {
     case Scheme::HTTP:
     case Scheme::HTTPS:
@@ -81,17 +92,22 @@ http::HttpResult URL::request() {
     case Scheme::FILE: {
       auto file = file::read(m_url);
       if (file.has_value()) {
-        // resp = http::HttpResponse{
-        //     .code = 200, .body = file.value(), .headers = {}};
+        resp.response.status_line = http::HttpStatusLine{
+            .version = "HTTP/1.1", .explanation = "OK", .status = 200};
+        resp.response.body = file.value();
       } else {
-        // resp = http::HttpResponse{
-        //     .code = 404, .body = "File not found\n", .headers = {}};
+        resp.errors.emplace_back("File not found");
+        resp.response.status_line = http::HttpStatusLine{
+            .version = "HTTP/1.1", .explanation = "Not Found", .status = 404};
       }
       break;
     }
     case Scheme::DATA:
-      // TODO: !
+      // TODO: Add support for data scheme
+    case Scheme::UNKNOWN:
     default:
+      resp.errors.emplace_back("Unsupported URL scheme");
+      apply_about_blank_details(resp);
       break;
   }
   return resp;

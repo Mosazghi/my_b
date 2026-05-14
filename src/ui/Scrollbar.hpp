@@ -1,4 +1,6 @@
 #pragma once
+#include <chrono>
+#include <cstdint>
 #include "Element.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
@@ -9,8 +11,10 @@ struct ScrollState {
   int content_height{};
   int viewport_height{};
   int scroll_pos{};
+  std::chrono::steady_clock::time_point last_scroll_time =
+      std::chrono::steady_clock::now();
 };
-enum class ScrollDirection { UP, DOWN };
+enum class ScrollDirection : std::uint8_t { UP, DOWN };
 
 class ScrollBar : public Element {
  public:
@@ -25,9 +29,10 @@ class ScrollBar : public Element {
   void mouse_click_scroll(const sf::Event& e);
   void mouse_hold_scroll(const sf::Event& e);
   void mouse_scroll(const sf::Event& e);
-  void scrolldown(ScrollDirection direction, const int scroll_step = 100);
 
  private:
+  float get_scroll_pos_from_mouse(const sf::Vector2i& mouse_pos) const;
+  void set_scroll_pos(float pos);
   sf::RectangleShape m_container;
   sf::RectangleShape m_thumb;
   sf::RenderWindow& m_window;

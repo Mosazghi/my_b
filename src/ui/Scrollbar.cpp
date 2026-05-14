@@ -1,6 +1,6 @@
 #include "Scrollbar.hpp"
 #include <algorithm>
-#include <cstdio>
+#include <iostream>
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Window/Mouse.hpp"
@@ -11,8 +11,6 @@ ScrollBar::ScrollBar(sf::RenderWindow& window) : m_window{window} {}
 void ScrollBar::update(int content_height, int viewport_height) {
   m_state.content_height = content_height;
   m_state.viewport_height = viewport_height;
-  // scroll_pos is intentionally not touched — managed internally by
-  // scrolldown()
 }
 
 void ScrollBar::draw() {
@@ -28,7 +26,7 @@ void ScrollBar::draw() {
   m_container.setSize(sf::Vector2f{width, viewport_h});
   m_container.setPosition(
       sf::Vector2f{static_cast<float>(m_window.getSize().x) - width, 0.f});
-  m_container.setFillColor(sf::Color(60, 60, 60));
+  m_container.setFillColor(sf::Color::Transparent);
   m_window.draw(m_container);
 
   // Thumb
@@ -42,6 +40,13 @@ void ScrollBar::draw() {
   const auto mouse_pos = sf::Mouse::getPosition(m_window);
   const bool hovered = m_thumb.getGlobalBounds().contains(sf::Vector2f{
       static_cast<float>(mouse_pos.x), static_cast<float>(mouse_pos.y)});
+  bool should_hide =
+      m_state.last_scroll_time + std::chrono::milliseconds(1500) <
+      std::chrono::steady_clock::now();
+  if (should_hide && !hovered) {
+    return;
+  }
+
   m_thumb.setFillColor(hovered ? sf::Color::White : sf::Color(192, 192, 192));
 
   m_window.draw(m_thumb);
@@ -50,21 +55,15 @@ void ScrollBar::draw() {
 void ScrollBar::handleEvent(const sf::Event& /*event*/) {}
 
 void ScrollBar::mouse_click_scroll(const sf::Event& e) {
-  const auto mouse_pos = sf::Mouse::getPosition(m_window);
-  const auto scroll_pos = m_state.scroll_pos;
+  const auto& mouse_pos = sf::Mouse::getPosition(m_window);
   if (!m_container.getGlobalBounds().contains(mouse_pos.x,
 
-                                              mouse_pos.y)) {
+                                              mouse_pos.y) ||
+      m_thumb.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y)) {
     return;
   }
-  const auto delta_y = mouse_pos.y - scroll_pos;
 
-  if (delta_y != 0) {
-    const auto dir = delta_y > 0 ? ScrollDirection::DOWN : ScrollDirection::UP;
-    const auto actual_scroll_step =
-        std::abs(delta_y) + m_container.getSize().y / 2 * 2;
-    scrolldown(dir, actual_scroll_step);
-  }
+  set_scroll_pos(get_scroll_pos_from_mouse(mouse_pos));
 }
 
 void ScrollBar::mouse_hold_scroll(const sf::Event& event) {
@@ -80,29 +79,38 @@ void ScrollBar::mouse_hold_scroll(const sf::Event& event) {
   }
 
   if (is_scrolling) {
-    static int last_mouse_y = mouse_pos.y;
-    int delta_y = mouse_pos.y - last_mouse_y;
-    if (delta_y != 0) {
-      ScrollDirection direction =
-          delta_y > 0 ? ScrollDirection::DOWN : ScrollDirection::UP;
-      scrolldown(direction);
-      last_mouse_y = mouse_pos.y;
-    }
+    set_scroll_pos(get_scroll_pos_from_mouse(mouse_pos));
   }
+}
+void ScrollBar::set_scroll_pos(float pos) {
+  m_state.scroll_pos = pos;
+  m_state.last_scroll_time = std::chrono::steady_clock::now();
+}
+
+float ScrollBar::get_scroll_pos_from_mouse(
+    const sf::Vector2i& mouse_pos) const {
+  const float track_top = m_container.getPosition().y;
+  const float track_height = m_container.getSize().y;
+  const float thumb_height = m_thumb.getSize().y;
+
+  const float max_scroll = std::max(
+      0.f, (float)m_state.content_height - (float)m_state.viewport_height);
+  const float track_range = std::max(1.f, track_height - thumb_height);
+
+  float t = ((float)mouse_pos.y - track_top - thumb_height * 0.5) / track_range;
+  t = std::clamp(t, 0.f, 1.f);
+  return t * max_scroll;
 }
 
 void ScrollBar::mouse_scroll(const sf::Event& event) {
-  ScrollDirection dir = event.mouseWheelScroll.delta > 0
-                            ? ScrollDirection::UP
-                            : ScrollDirection::DOWN;
+  constexpr int scroll_step = 100;
+  ScrollDirection direction = event.mouseWheelScroll.delta > 0
+                                  ? ScrollDirection::UP
+                                  : ScrollDirection::DOWN;
 
-  scrolldown(dir);
-}
-
-void ScrollBar::scrolldown(ScrollDirection direction, const int scroll_step) {
   const auto scroll_pos = m_state.scroll_pos;
   if (direction == ScrollDirection::UP) {
-    m_state.scroll_pos = std::max(0, scroll_pos - scroll_step);
+    set_scroll_pos(std::max(0, scroll_pos - scroll_step));
   } else {
     int max_scroll = std::max(
         0, m_state.content_height - static_cast<int>(m_window.getSize().y));
@@ -110,7 +118,7 @@ void ScrollBar::scrolldown(ScrollDirection direction, const int scroll_step) {
       return;
     }
 
-    m_state.scroll_pos = std::min(max_scroll, scroll_pos + scroll_step);
+    set_scroll_pos(std::min(max_scroll, scroll_pos + scroll_step));
   }
 }
 

@@ -55,7 +55,6 @@ HttpResult HttpClient::get(std::string_view url) {
   auto params = get_params_from_url(url);
   HttpResult result{};
 
-  logger.inf("LFG");
   if (!params.has_value()) {
     logger.err("Failed to get HTTP request parameters from URL");
     result.errors.emplace_back(
