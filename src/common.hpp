@@ -9,12 +9,12 @@ namespace common {
 
 enum class TextureType : std::uint8_t { EMOJI, TEXT };
 
-struct DecodedType {
+struct DecodedElement {
   TextureType type;
   sf::Uint32 value{};
 };
 
-using PositionTextPair = std::tuple<int, int, DecodedType>;
+using PositionTextPair = std::tuple<int, int, DecodedElement>;
 
 std::string lex(std::string& body);
 bool isEmoji(sf::Uint32 codepoint);

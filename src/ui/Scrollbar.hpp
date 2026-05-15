@@ -14,17 +14,20 @@ struct ScrollState {
   std::chrono::steady_clock::time_point last_scroll_time =
       std::chrono::steady_clock::now();
 };
+
 enum class ScrollDirection : std::uint8_t { UP, DOWN };
 
 class ScrollBar : public Element {
+  static constexpr float SCROLL_BAR_WIDTH{20.f};
+
  public:
   explicit ScrollBar(sf::RenderWindow& window);
   ~ScrollBar() override = default;
 
   void update(int content_height, int viewport_height);
   void draw() override;
-  void handleEvent(const sf::Event& event) override;
-  int get_scroll_pos() const { return m_state.scroll_pos; }
+  int get_current_roll_pos() const { return m_state.scroll_pos; }
+  float get_width() const { return SCROLL_BAR_WIDTH; }
 
   void mouse_click_scroll(const sf::Event& e);
   void mouse_hold_scroll(const sf::Event& e);

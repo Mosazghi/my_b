@@ -1,19 +1,16 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <common.hpp>
-#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <unordered_map>
 #include <vector>
 #include "SFML/Graphics/Font.hpp"
-#include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Window/Event.hpp"
 #include "logger.hpp"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
 namespace browser {
-
 using EventCallback = std::function<void(const sf::Event&)>;
 class Browser {
  public:

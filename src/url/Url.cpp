@@ -12,7 +12,6 @@
 #include <http/IHttpClient.hpp>
 #include <optional>
 #include <utility>
-#include "SFML/Window/Keyboard.hpp"
 #include "file/File.hpp"
 #include "logger.hpp"
 #include "url/Types.hpp"
@@ -65,8 +64,6 @@ URL::URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client)
     auto s2 = rest.find(',');
     m_data.data_scheme.protocol = rest.substr(0, s2);
     m_data.data_scheme.data = rest.substr(s2 + 1);
-    logger.dbg("DATA SCHEME: {} ({}) :::: {},  {}", m_url, rest,
-               m_data.data_scheme.protocol, m_data.data_scheme.data);
   }
 }
 
@@ -117,7 +114,9 @@ bool URL::is_scheme_in(Scheme s) const { return m_data.scheme == s; }
 
 bool URL::is_scheme_in(const std::vector<Scheme>& ss) const {
   for (const auto& s : ss) {
-    if (m_data.scheme == s) return true;
+    if (m_data.scheme == s) {
+      return true;
+    }
   }
   return false;
 }

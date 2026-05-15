@@ -52,11 +52,11 @@ std::vector<PositionTextPair> layout(const std::string& text,
   auto cursor_y = consts::VSTEP;
 
   for (const std::uint32_t c : decoded) {
-    DecodedType type{.type = TextureType::TEXT, .value = c};
+    DecodedElement element{.type = TextureType::TEXT, .value = c};
     if (isEmoji(c)) {
-      type.type = TextureType::EMOJI;
+      element.type = TextureType::EMOJI;
     }
-    display_list.emplace_back(cursor_x, cursor_y, type);
+    display_list.emplace_back(cursor_x, cursor_y, element);
 
     if (c == U'\n') {
       cursor_x = consts::HSTEP;

@@ -1,6 +1,5 @@
 #include "Browser.hpp"
 #include <SFML/Graphics.hpp>
-#include <sstream>
 #include <utility>
 #include <vector>
 #include "SFML/Graphics/Sprite.hpp"
@@ -9,6 +8,7 @@
 #include "SFML/Window/Event.hpp"
 #include "const.hpp"
 #include "texture-manager/TextureManager.h"
+#include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
 namespace browser {
 
@@ -98,9 +98,8 @@ void Browser::spin() {
 }
 
 void Browser::draw() {
-  constexpr auto scroll_bar_width{20};
-  const auto scroll_pos = m_scroll_bar.get_scroll_pos();
-  for (const auto& [x, y, type] : m_display_list) {
+  const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
+  for (const auto& [x, y, element] : m_display_list) {
     if (y > static_cast<int>(scroll_pos + m_window.getSize().y)) {
       continue;
     }
@@ -108,21 +107,21 @@ void Browser::draw() {
       continue;
     }
 
-    if (type.type == common::TextureType::TEXT) {
-      sf::String glyph(type.value);
-      sf::Text character(glyph, m_font, 12);
+    if (element.type == common::TextureType::TEXT) {
+      sf::String glyph(element.value);
+      sf::Text character(glyph, m_font, 14);
       character.setFillColor(sf::Color::White);
-      character.setPosition(x - scroll_bar_width, y - scroll_pos);
+      character.setPosition(x, y - scroll_pos);
       m_window.draw(character);
     } else {
-      std::string id = common::get_emoji_id(type.value);
+      std::string id = common::get_emoji_id(element.value);
       auto texture = texture::TextureManager::get(id);
       if (!texture.has_value()) {
         logger.warn("Texture not found for codepoint: U+{}", id);
         continue;
       }
       sf::Sprite emoji(*texture);
-      emoji.setPosition(x - scroll_bar_width, y - scroll_pos);
+      emoji.setPosition(x, y - scroll_pos);
       emoji.setScale(0.8f, 0.8f);
       m_window.draw(emoji);
     }

@@ -1,6 +1,5 @@
 #include "Scrollbar.hpp"
 #include <algorithm>
-#include <iostream>
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Window/Mouse.hpp"
@@ -20,7 +19,9 @@ void ScrollBar::draw() {
   const float viewport_h = static_cast<float>(m_state.viewport_height);
   const float scroll_pos = static_cast<float>(m_state.scroll_pos);
 
-  if (content_h <= viewport_h) return;
+  if (content_h <= viewport_h) {
+    return;
+  }
 
   // Container
   m_container.setSize(sf::Vector2f{width, viewport_h});
@@ -52,9 +53,7 @@ void ScrollBar::draw() {
   m_window.draw(m_thumb);
 }
 
-void ScrollBar::handleEvent(const sf::Event& /*event*/) {}
-
-void ScrollBar::mouse_click_scroll(const sf::Event& e) {
+void ScrollBar::mouse_click_scroll(const sf::Event& /*event*/) {
   const auto& mouse_pos = sf::Mouse::getPosition(m_window);
   if (!m_container.getGlobalBounds().contains(mouse_pos.x,
 

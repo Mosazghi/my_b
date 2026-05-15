@@ -1,7 +1,8 @@
 #pragma once
+#include <cstdint>
 namespace url {
 
-enum class Scheme {
+enum class Scheme : std::uint8_t {
   UNKNOWN,  //< Unsupported.
   HTTP,
   HTTPS,
