@@ -1,9 +1,15 @@
 #include "common.hpp"
+#include <openssl/evp.h>
 #include <unicode/uchar.h>
 #include <unicode/urename.h>
+#include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 #include <iomanip>
+#include <iostream>
+#include <ranges>
 #include <regex>
+#include <sstream>
+#include "SFML/Graphics/Font.hpp"
 #include "const.hpp"
 
 namespace common {
@@ -40,35 +46,52 @@ std::string get_emoji_id(sf::Uint32 codepoint) {
 }
 
 std::vector<PositionTextPair> layout(const std::string& text,
-                                     int window_width) {
+                                     const sf::Font& font, int window_width) {
   std::vector<PositionTextPair> display_list;
   if (text.empty()) {
     return display_list;
   }
-  display_list.reserve(text.size());
-  sf::String decoded = sf::String::fromUtf8(text.begin(), text.end());
 
   auto cursor_x = consts::HSTEP;
   auto cursor_y = consts::VSTEP;
 
-  for (const std::uint32_t c : decoded) {
-    DecodedElement element{.type = TextureType::TEXT, .value = c};
-    if (isEmoji(c)) {
+  const float line_space = font.getLineSpacing(16) * 1.25f;
+  const float space_width = font.getGlyph(U' ', 16, false).advance;
+
+  std::istringstream stream(text);
+  std::string word;
+
+  while (stream >> word) {
+    sf::String sf_word = sf::String::fromUtf8(word.begin(), word.end());
+    sf::Text wrd(sf_word, font, 16);
+
+    const auto word_width = wrd.getLocalBounds().width;
+
+    DecodedElement element{.type = TextureType::TEXT, .value = sf_word};
+
+    if (!sf_word.isEmpty() && isEmoji(sf_word[0])) {
       element.type = TextureType::EMOJI;
     }
-    display_list.emplace_back(cursor_x, cursor_y, element);
+    // if (cursor_x + word_width > window_width - consts::HSTEP) {
+    //   std::cout << "newline\n";
+    //   cursor_y += line_space;
+    //   cursor_x = consts::HSTEP;
+    // }
 
-    if (c == U'\n') {
+    display_list.emplace_back(cursor_x, cursor_y, element);
+    cursor_x += word_width + space_width;
+
+    if (sf_word[0] == '\n') {
+      std::cout << "NEWLINE\n";
       cursor_x = consts::HSTEP;
-      cursor_y += consts::VSTEP;
+      cursor_y += line_space;
       continue;
     }
-    if (cursor_x >= window_width - consts::HSTEP) {
-      cursor_x = consts::HSTEP;
-      cursor_y += consts::VSTEP;
-    }
 
-    cursor_x += consts::HSTEP;
+    if (cursor_x + word_width > window_width - consts::HSTEP) {
+      cursor_y += line_space;
+      cursor_x = consts::HSTEP;
+    }
   }
 
   return display_list;

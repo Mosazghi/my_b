@@ -14,7 +14,7 @@ namespace browser {
 
 Browser::Browser(sf::RenderWindow& window)
     : m_window{window}, m_running{true}, m_scroll_bar{window} {
-  if (!m_font.loadFromFile("assets/RobotoMono-Regular.ttf")) {
+  if (!m_font.loadFromFile("assets/NotoSans-Regular.ttf")) {
     logger.err("Error loading font\n");
     return;
   }
@@ -25,7 +25,7 @@ Browser::Browser(sf::RenderWindow& window)
 void Browser::load(url::URL& url) {
   auto resp = url.request();
   m_text_content = common::lex(resp.response.body);
-  m_display_list = common::layout(m_text_content, m_window.getSize().x);
+  m_display_list = common::layout(m_text_content, m_font, m_window.getSize().x);
 }
 
 void Browser::register_event_handlers() {
@@ -50,9 +50,11 @@ void Browser::register_event_handlers() {
   register_callback(sf::Event::EventType::MouseWheelScrolled,
                     [&](const sf::Event& e) { m_scroll_bar.mouse_scroll(e); });
   register_callback(
-      {sf::Event::EventType::MouseMoved,
-       sf::Event::EventType::MouseButtonPressed,
-       sf::Event::EventType::MouseButtonReleased},
+      {
+          sf::Event::EventType::MouseMoved,
+          sf::Event::EventType::MouseButtonPressed,
+          sf::Event::EventType::MouseButtonReleased,
+      },
       [&](const sf::Event& e) { m_scroll_bar.mouse_hold_scroll(e); });
 
   register_callback(
@@ -109,12 +111,14 @@ void Browser::draw() {
 
     if (element.type == common::TextureType::TEXT) {
       sf::String glyph(element.value);
-      sf::Text character(glyph, m_font, 14);
+      sf::Text character(glyph, m_font, 16);
       character.setFillColor(sf::Color::White);
+      const auto bounds = character.getLocalBounds();
+      character.setOrigin(bounds.left, bounds.top);
       character.setPosition(x, y - scroll_pos);
       m_window.draw(character);
     } else {
-      std::string id = common::get_emoji_id(element.value);
+      std::string id = common::get_emoji_id(element.value[0]);
       auto texture = texture::TextureManager::get(id);
       if (!texture.has_value()) {
         logger.warn("Texture not found for codepoint: U+{}", id);
@@ -137,7 +141,7 @@ void Browser::update_ui_elements() {
 }
 
 void Browser::relayout_for_current_window_width() {
-  m_display_list = common::layout(m_text_content, m_window.getSize().x);
+  m_display_list = common::layout(m_text_content, m_font, m_window.getSize().x);
 }
 
 }  // namespace browser

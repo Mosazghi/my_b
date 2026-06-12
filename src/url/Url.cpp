@@ -76,7 +76,7 @@ http::HttpResult URL::request() {
   const auto apply_about_blank_details = [](http::HttpResult& r) {
     r.response.status_line = http::HttpStatusLine{
         .version = "HTTP/1.1", .explanation = "OK", .status = 200};
-    r.response.body = "<html><body><h1>About Blank</h1></body></html>";
+    r.response.body = "<html><body><h1>about:blank</h1></body></html>";
     r.response.headers["content-type"] = "text/html";
   };
 

@@ -1,5 +1,6 @@
 #include "Scrollbar.hpp"
 #include <algorithm>
+#include <iostream>
 #include "SFML/Graphics/Color.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Window/Mouse.hpp"
@@ -81,6 +82,7 @@ void ScrollBar::mouse_hold_scroll(const sf::Event& event) {
     set_scroll_pos(get_scroll_pos_from_mouse(mouse_pos));
   }
 }
+
 void ScrollBar::set_scroll_pos(float pos) {
   m_state.scroll_pos = pos;
   m_state.last_scroll_time = std::chrono::steady_clock::now();
