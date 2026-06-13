@@ -4,25 +4,39 @@
 #include <cstdint>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <variant>
 #include <vector>
 #include "SFML/Graphics/Font.hpp"
 
 namespace common {
 
-enum class TextureType : std::uint8_t { EMOJI, TEXT };
+enum class LayoutElementType : std::uint8_t { EMOJI, TEXT };
 
-struct DecodedElement {
-  TextureType type;
+struct LayoutElement {
+  LayoutElementType type;
   sf::String value{};
 };
 
-using PositionTextPair = std::tuple<int, int, DecodedElement>;
+using PositionTextPair = std::tuple<int, int, LayoutElement, sf::Text>;
 
-std::string lex(std::string& body);
+struct Text {
+  std::string text;
+  explicit Text(std::string t) : text(std::move(t)) {}
+};
+
+struct Tag {
+  std::string tag;
+  explicit Tag(std::string t) : tag(std::move(t)) {}
+};
+
+using Token = std::variant<Text, Tag>;
+
+std::vector<Token> lex(std::string& body);
 bool isEmoji(sf::Uint32 codepoint);
 std::string get_emoji_id(sf::Uint32 codepoint);
 
-std::vector<PositionTextPair> layout(const std::string& text,
-                                     const sf::Font& font, int window_width);
+std::vector<PositionTextPair> layout(const std::vector<Token>& tokens,
+                                     sf::Font& font, int window_width);
 
 }  // namespace common

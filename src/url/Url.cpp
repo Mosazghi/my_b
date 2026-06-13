@@ -100,7 +100,7 @@ http::HttpResult URL::request() {
       break;
     }
     case Scheme::DATA:
-      // TODO: Add support for data scheme
+    // TODO: Add support for data scheme
     case Scheme::UNKNOWN:
     default:
       resp.errors.emplace_back("Unsupported URL scheme");

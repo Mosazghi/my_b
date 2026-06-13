@@ -101,7 +101,7 @@ void Browser::spin() {
 
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
-  for (const auto& [x, y, element] : m_display_list) {
+  for (const auto& [x, y, element, text] : m_display_list) {
     if (y > static_cast<int>(scroll_pos + m_window.getSize().y)) {
       continue;
     }
@@ -109,9 +109,10 @@ void Browser::draw() {
       continue;
     }
 
-    if (element.type == common::TextureType::TEXT) {
+    if (element.type == common::LayoutElementType::TEXT) {
       sf::String glyph(element.value);
       sf::Text character(glyph, m_font, 16);
+      character.setStyle(text.getStyle());
       character.setFillColor(sf::Color::White);
       const auto bounds = character.getLocalBounds();
       character.setOrigin(bounds.left, bounds.top);

@@ -6,17 +6,19 @@
 #include <SFML/System/String.hpp>
 #include <iomanip>
 #include <iostream>
-#include <ranges>
 #include <regex>
 #include <sstream>
+#include <variant>
+#include <vector>
 #include "SFML/Graphics/Font.hpp"
 #include "const.hpp"
 
 namespace common {
 
-std::string lex(std::string& body) {
+std::vector<Token> lex(std::string& body) {
   bool in_tag{};
-  std::string text{};
+  std::string buffer{};
+  std::vector<Token> result{};
 
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
@@ -24,13 +26,22 @@ std::string lex(std::string& body) {
   for (const auto& c : body) {
     if (c == '<') {
       in_tag = true;
+      if (!buffer.empty()) {
+        result.emplace_back(Text(buffer));
+      }
+      buffer.clear();
     } else if (c == '>') {
       in_tag = false;
-    } else if (!in_tag) {
-      text += c;
+      result.emplace_back(Tag(buffer));
+      buffer.clear();
+    } else {
+      buffer += c;
     }
   }
-  return text;
+  if (!in_tag and !buffer.empty()) {
+    result.emplace_back(Text(buffer));
+  }
+  return result;
 }
 
 bool isEmoji(sf::Uint32 codepoint) {
@@ -45,52 +56,65 @@ std::string get_emoji_id(sf::Uint32 codepoint) {
   return id_stream.str();
 }
 
-std::vector<PositionTextPair> layout(const std::string& text,
-                                     const sf::Font& font, int window_width) {
+std::vector<PositionTextPair> layout(const std::vector<Token>& tokens,
+                                     sf::Font& font, int window_width) {
   std::vector<PositionTextPair> display_list;
-  if (text.empty()) {
-    return display_list;
-  }
 
   auto cursor_x = consts::HSTEP;
   auto cursor_y = consts::VSTEP;
 
   const float line_space = font.getLineSpacing(16) * 1.25f;
-  const float space_width = font.getGlyph(U' ', 16, false).advance;
+  const float space_width = font.getGlyph(' ', 16, false).advance;
 
-  std::istringstream stream(text);
-  std::string word;
+  std::string style{"roman"};
+  std::string weight{"normal"};
 
-  while (stream >> word) {
-    sf::String sf_word = sf::String::fromUtf8(word.begin(), word.end());
-    sf::Text wrd(sf_word, font, 16);
+  for (const auto& tok : tokens) {
+    if (std::holds_alternative<Text>(tok)) {
+      const auto& text = std::get<Text>(tok);
+      std::istringstream stream(text.text);
+      std::string word;
 
-    const auto word_width = wrd.getLocalBounds().width;
+      while (stream >> word) {
+        sf::String sf_word = sf::String::fromUtf8(word.begin(), word.end());
+        sf::Text wrd(sf_word, font, 16);
 
-    DecodedElement element{.type = TextureType::TEXT, .value = sf_word};
+        sf::Uint32 sfml_style = sf::Text::Regular;
 
-    if (!sf_word.isEmpty() && isEmoji(sf_word[0])) {
-      element.type = TextureType::EMOJI;
-    }
-    // if (cursor_x + word_width > window_width - consts::HSTEP) {
-    //   std::cout << "newline\n";
-    //   cursor_y += line_space;
-    //   cursor_x = consts::HSTEP;
-    // }
+        if (weight == "bold") {
+          sfml_style |= sf::Text::Bold;
+        }
+        if (style == "italic") {
+          sfml_style |= sf::Text::Italic;
+        }
+        wrd.setStyle(sfml_style);
+        const auto word_width = wrd.getLocalBounds().width;
 
-    display_list.emplace_back(cursor_x, cursor_y, element);
-    cursor_x += word_width + space_width;
+        LayoutElement element{.type = LayoutElementType::TEXT,
+                              .value = sf_word};
 
-    if (sf_word[0] == '\n') {
-      std::cout << "NEWLINE\n";
-      cursor_x = consts::HSTEP;
-      cursor_y += line_space;
-      continue;
-    }
+        if (!sf_word.isEmpty() && isEmoji(sf_word[0])) {
+          element.type = LayoutElementType::EMOJI;
+        }
+        if (cursor_x + word_width > window_width - consts::HSTEP) {
+          cursor_y += line_space;
+          cursor_x = consts::HSTEP;
+        }
 
-    if (cursor_x + word_width > window_width - consts::HSTEP) {
-      cursor_y += line_space;
-      cursor_x = consts::HSTEP;
+        display_list.emplace_back(cursor_x, cursor_y, element, wrd);
+        cursor_x += word_width + space_width;
+      }
+    } else {
+      const auto& tag = std::get<Tag>(tok).tag;
+      if (tag == "i") {
+        style = "italic";
+      } else if (tag == "/i") {
+        style = "roman";
+      } else if (tag == "b") {
+        weight = "bold";
+      } else if (tag == "/b") {
+        weight = "normal";
+      }
     }
   }
 
