@@ -32,18 +32,15 @@ using Token = std::variant<Text, Tag>;
 
 using Token = std::variant<Text, Tag>;
 using PositionTextPair = std::tuple<int, int, LayoutElement, sf::Text>;
-class Layout {
- public:
-  explicit Layout(const std::vector<Token>& tokens);
 
-  std::vector<PositionTextPair> layout(const std::vector<Token>& tokens,
-                                       sf::Font& font, int window_width);
-
- private:
-  void token(const auto& token);
-  int m_cursor_x = HSTEP;
-  int m_cursor_y = VSTEP;
-  std::string m_style{"roman"};
-  std::string m_weight{"normal"};
+struct LayoutContext {
+  float cursor_x = HSTEP;
+  float cursor_y = VSTEP;
+  std::string style{"roman"};
+  std::string weight{"normal"};
+  std::vector<PositionTextPair> display_list;
 };
+
+std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
+                                      sf::Font& font, int window_width);
 };  // namespace layout

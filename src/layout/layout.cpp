@@ -4,20 +4,10 @@
 
 namespace layout {
 
-std::vector<PositionTextPair> Layout::layout(const std::vector<Token>& tokens,
-                                             sf::Font& font, int window_width) {
-  std::vector<PositionTextPair> display_list;
-
+static void process_token(LayoutContext& ctx, const Token& token,
+                          sf::Font& font, int window_width) {
   const float line_space = font.getLineSpacing(16) * 1.25f;
   const float space_width = font.getGlyph(' ', 16, false).advance;
-
-  for (const auto& token : tokens) {
-  }
-
-  return display_list;
-}
-
-void Layout::token(const auto& token) {
   if (std::holds_alternative<Text>(token)) {
     const auto& text = std::get<Text>(token);
     std::istringstream stream(text.text);
@@ -29,10 +19,10 @@ void Layout::token(const auto& token) {
 
       sf::Uint32 sfml_style = sf::Text::Regular;
 
-      if (m_weight == "bold") {
+      if (ctx.weight == "bold") {
         sfml_style |= sf::Text::Bold;
       }
-      if (m_style == "italic") {
+      if (ctx.style == "italic") {
         sfml_style |= sf::Text::Italic;
       }
       wrd.setStyle(sfml_style);
@@ -43,25 +33,36 @@ void Layout::token(const auto& token) {
       if (!sf_word.isEmpty() && common::isEmoji(sf_word[0])) {
         element.type = LayoutElementType::EMOJI;
       }
-      if (m_cursor_x + word_width > window_width - HSTEP) {
-        m_cursor_y += line_space;
-        m_cursor_x = HSTEP;
+      if (ctx.cursor_x + word_width > window_width - HSTEP) {
+        ctx.cursor_y += line_space;
+        ctx.cursor_x = HSTEP;
       }
 
-      display_list.emplace_back(m_cursor_x, m_cursor_y, element, wrd);
-      m_cursor_x += word_width + space_width;
+      ctx.display_list.emplace_back(ctx.cursor_x, ctx.cursor_y, element, wrd);
+      ctx.cursor_x += word_width + space_width;
     }
   } else {
     const auto& tag = std::get<Tag>(token).tag;
     if (tag == "i") {
-      m_style = "italic";
+      ctx.style = "italic";
     } else if (tag == "/i") {
-      m_style = "roman";
+      ctx.style = "roman";
     } else if (tag == "b") {
-      m_weight = "bold";
+      ctx.weight = "bold";
     } else if (tag == "/b") {
-      m_weight = "normal";
+      ctx.weight = "normal";
     }
   }
+}
+
+std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
+                                      sf::Font& font, int window_width) {
+  LayoutContext ctx{};
+
+  for (const auto& token : tokens) {
+    process_token(ctx, token, font, window_width);
+  }
+
+  return ctx.display_list;
 }
 }  // namespace layout

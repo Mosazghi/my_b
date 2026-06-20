@@ -16,6 +16,7 @@ std::vector<layout::Token> lex(std::string& body) {
   bool in_tag{};
   std::string buffer{};
   std::vector<layout::Token> result{};
+
   using namespace layout;
 
   body = std::regex_replace(body, std::regex("&lt;"), "<");

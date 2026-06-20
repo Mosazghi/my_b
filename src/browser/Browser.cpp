@@ -6,7 +6,7 @@
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/Graphics/View.hpp"
 #include "SFML/Window/Event.hpp"
-#include "const.hpp"
+#include "layout/layout.hpp"
 #include "texture-manager/TextureManager.h"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
@@ -25,7 +25,8 @@ Browser::Browser(sf::RenderWindow& window)
 void Browser::load(url::URL& url) {
   auto resp = url.request();
   m_text_content = common::lex(resp.response.body);
-  m_display_list = common::layout(m_text_content, m_font, m_window.getSize().x);
+  m_display_list =
+      layout::compute(m_text_content, m_font, m_window.getSize().x);
 }
 
 void Browser::register_event_handlers() {
@@ -105,11 +106,11 @@ void Browser::draw() {
     if (y > static_cast<int>(scroll_pos + m_window.getSize().y)) {
       continue;
     }
-    if (y + consts::VSTEP < scroll_pos) {
+    if (y + layout::VSTEP < scroll_pos) {
       continue;
     }
 
-    if (element.type == common::LayoutElementType::TEXT) {
+    if (element.type == layout::LayoutElementType::TEXT) {
       sf::String glyph(element.value);
       sf::Text character(glyph, m_font, 16);
       character.setStyle(text.getStyle());
@@ -142,7 +143,8 @@ void Browser::update_ui_elements() {
 }
 
 void Browser::relayout_for_current_window_width() {
-  m_display_list = common::layout(m_text_content, m_font, m_window.getSize().x);
+  m_display_list =
+      layout::compute(m_text_content, m_font, m_window.getSize().x);
 }
 
 }  // namespace browser
