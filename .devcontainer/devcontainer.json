@@ -1,17 +1,27 @@
 {
-  "name": "C++ SFML Development",
-  "build": {
-    "dockerfile": "../Dockerfile"
-  },
-  "workspaceFolder": "/workspace",
-  "mounts": ["source=${localWorkspaceFolder},target=/workspace,type=bind"],
-  "features": {
-    "ghcr.io/devcontainers/features/common-utils:1": {
-      "installZsh": false,
-      "configureZshAsDefaultShell": false
+    "name": "cpp-sfml-dev",
+    "build": {
+        "dockerfile": "../Dockerfile"
     },
-    "ghcr.io/rails/devcontainer/features/activestorage": {},
-    "ghcr.io/duduribeiro/devcontainer-features/neovim:1": {}
-  },
-  "postCreateCommand": "apt-get update && apt-get install -y clangd libclang-dev"
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "workspaceFolder": "/workspace",
+    "mounts": [
+        "source=cpp-sfml-dev-build,target=/workspace/build,type=volume"
+    ],
+    "remoteEnv": {
+        "DISPLAY": "host.docker.internal:0.0"
+    },
+    "customizations": {
+        "zed": {
+            "settings": {
+                "lsp": {
+                    "clangd": {
+                        "initialization_options": {
+                            "compilationDatabasePath": "build"
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

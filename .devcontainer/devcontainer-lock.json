@@ -23,11 +23,6 @@
         "ghcr.io/devcontainers/features/common-utils",
         "ghcr.io/devcontainers/features/git"
       ]
-    },
-    "ghcr.io/rails/devcontainer/features/activestorage": {
-      "version": "1.1.1",
-      "resolved": "ghcr.io/rails/devcontainer/features/activestorage@sha256:7fa8fff898ac33076ebf65631d3c6c902dc9bad87de3e5dfa645f3e2d7a35c07",
-      "integrity": "sha256:7fa8fff898ac33076ebf65631d3c6c902dc9bad87de3e5dfa645f3e2d7a35c07"
     }
   }
 }

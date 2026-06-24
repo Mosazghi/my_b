@@ -1,8 +1,8 @@
-FROM ubuntu:24.04 
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     ninja-build \
@@ -13,8 +13,11 @@ RUN apt-get update && apt-get install -y \
     libsfml-dev \
     libgtest-dev \
     libgmock-dev \
+    clangd \
+    libclang-dev \
+    git \ 
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR  /workspace 
+WORKDIR  /workspace
 
 CMD ["/bin/bash"]
