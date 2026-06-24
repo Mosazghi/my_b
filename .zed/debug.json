@@ -7,8 +7,8 @@
     "label": "Debug my_b",
     "request": "launch",
     "adapter": "CodeLLDB",
-    "program": "/home/mosa/Projects/my_b/build/my_b",
-    "cwd": "/home/mosa/Projects/my_b",
+    "program": "/workspace/build/my_b",
+    "cwd": "/workspace",
     "args": ["--url", "hattps://browser.engineering/graphics.html"],
   },
 ]
