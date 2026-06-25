@@ -1,22 +1,29 @@
 {
-  "name": "cpp-sfml-dev",
-  "build": {
-    "dockerfile": "../Dockerfile",
-  },
-  "containerEnv": {
-    "DISPLAY": "host.docker.internal:0.0",
-  },
-  "customizations": {
-    "zed": {
-      "settings": {
-        "lsp": {
-          "clangd": {
-            "initialization_options": {
-              "compilationDatabasePath": "build",
-            },
-          },
-        },
-      },
+    "name": "cpp-sfml-dev",
+    "build": {
+        "dockerfile": "../Dockerfile"
     },
-  },
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "mounts": [
+        "source=${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
+        "source=${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
+    ],
+    "containerEnv": {
+        "DISPLAY": "host.docker.internal:0.0"
+    },
+    "customizations": {
+        "zed": {
+            "settings": {
+                "lsp": {
+                    "clangd": {
+                        "initialization_options": {
+                            "compilationDatabasePath": "build"
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
