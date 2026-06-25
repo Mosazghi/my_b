@@ -26,6 +26,8 @@ static void process_token(LayoutContext& ctx, const Token& token,
         sfml_style |= sf::Text::Italic;
       }
       wrd.setStyle(sfml_style);
+      wrd.setCharacterSize(ctx.size);
+
       const auto word_width = wrd.getLocalBounds().width;
 
       LayoutElement element{.type = LayoutElementType::TEXT, .value = sf_word};
@@ -51,6 +53,15 @@ static void process_token(LayoutContext& ctx, const Token& token,
       ctx.weight = "bold";
     } else if (tag == "/b") {
       ctx.weight = "normal";
+    }
+    else if (tag == "small") {
+        ctx.size -= 2;
+    } else if (tag == "/small") {
+        ctx.size += 2;
+    } else if (tag == "big") {
+        ctx.size += 4;
+    } else if (tag == "/big") {
+        ctx.size -= 4;
     }
   }
 }

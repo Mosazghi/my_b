@@ -1,6 +1,7 @@
-FROM ubuntu:24.04
+FROM mcr.microsoft.com/devcontainers/cpp:ubuntu
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=host.docker.internal:0.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -15,9 +16,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgmock-dev \
     clangd \
     libclang-dev \
-    git \ 
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR  /workspace
+WORKDIR /workspace
+
+
 
 CMD ["/bin/bash"]

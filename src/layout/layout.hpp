@@ -38,6 +38,7 @@ struct LayoutContext {
   float cursor_y = VSTEP;
   std::string style{"roman"};
   std::string weight{"normal"};
+  int size{12};
   std::vector<PositionTextPair> display_list;
 };
 
