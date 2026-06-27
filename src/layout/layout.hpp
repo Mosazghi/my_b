@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <variant>
 #include <vector>
 #include "SFML/Graphics/Text.hpp"
@@ -31,15 +32,19 @@ struct Tag {
 using Token = std::variant<Text, Tag>;
 
 using Token = std::variant<Text, Tag>;
-using PositionTextPair = std::tuple<int, int, LayoutElement, sf::Text>;
+using PositionTextPair = std::tuple<double, double, LayoutElement, sf::Text>;
+using Line = std::tuple<double, LayoutElement, sf::Text>;
 
 struct LayoutContext {
-  float cursor_x = HSTEP;
-  float cursor_y = VSTEP;
+  double cursor_x{HSTEP};
+  double cursor_y{VSTEP};
   std::string style{"roman"};
   std::string weight{"normal"};
   int size{12};
-  std::vector<PositionTextPair> display_list;
+  std::vector<PositionTextPair> display_list{};
+  std::vector<Line> line{};
+  sf::Font font{};
+  int window_width{};
 };
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,

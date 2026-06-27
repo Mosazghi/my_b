@@ -1,4 +1,5 @@
 #include "Browser.hpp"
+#include <openssl/evp.h>
 #include <SFML/Graphics.hpp>
 #include <utility>
 #include <vector>
@@ -93,7 +94,7 @@ void Browser::spin() {
       dispatch_event(event);
     }
 
-    m_window.clear();
+    m_window.clear(sf::Color::White);
     update_ui_elements();
     draw();
     m_window.display();
@@ -103,7 +104,7 @@ void Browser::spin() {
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
   for (const auto& [x, y, element, text] : m_display_list) {
-    if (y > static_cast<int>(scroll_pos + m_window.getSize().y)) {
+    if (y > scroll_pos + m_window.getSize().y) {
       continue;
     }
     if (y + layout::VSTEP < scroll_pos) {
@@ -112,9 +113,9 @@ void Browser::draw() {
 
     if (element.type == layout::LayoutElementType::TEXT) {
       sf::String glyph(element.value);
-      sf::Text character(glyph, m_font, 16);
+      sf::Text character(glyph, m_font, text.getCharacterSize());
       character.setStyle(text.getStyle());
-      character.setFillColor(sf::Color::White);
+      character.setFillColor(sf::Color::Black);
       const auto bounds = character.getLocalBounds();
       character.setOrigin(bounds.left, bounds.top);
       character.setPosition(x, y - scroll_pos);
@@ -132,6 +133,7 @@ void Browser::draw() {
       m_window.draw(emoji);
     }
   }
+
   m_scroll_bar.draw();
 }
 
