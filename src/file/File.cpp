@@ -14,7 +14,8 @@ std::optional<std::string> read(const std::string& path) {
 
   if (!file.is_open()) {
     const auto error = errno;
-    logger.warn("Could not open the file '{}': {}", path, strerror(error));
+    logger.warn("file: could not open the file '{}': {}", path,
+                strerror(error));
     return {};
   }
 

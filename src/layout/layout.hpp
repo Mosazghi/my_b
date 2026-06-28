@@ -36,15 +36,15 @@ using PositionTextPair = std::tuple<double, double, LayoutElement, sf::Text>;
 using Line = std::tuple<double, LayoutElement, sf::Text>;
 
 struct LayoutContext {
+  int size{12};
+  int window_width{};
   double cursor_x{HSTEP};
   double cursor_y{VSTEP};
   std::string style{"roman"};
   std::string weight{"normal"};
-  int size{12};
   std::vector<PositionTextPair> display_list{};
   std::vector<Line> line{};
-  sf::Font font{};
-  int window_width{};
+  sf::Font& font;
 };
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,

@@ -8,7 +8,7 @@
 #include "SFML/Graphics/View.hpp"
 #include "SFML/Window/Event.hpp"
 #include "layout/layout.hpp"
-#include "texture-manager/TextureManager.h"
+#include "resource-manager/ResourceManager.h"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
 namespace browser {
@@ -122,14 +122,18 @@ void Browser::draw() {
       m_window.draw(character);
     } else {
       std::string id = common::get_emoji_id(element.value[0]);
-      auto texture = texture::TextureManager::get(id);
+      auto texture = resource::ResourceManager::get_texture(id);
       if (!texture.has_value()) {
         logger.warn("Texture not found for codepoint: U+{}", id);
         continue;
       }
       sf::Sprite emoji(*texture);
+      const auto target_size = static_cast<float>(text.getCharacterSize());
+      const auto tex_size = (*texture).getSize();
+      const auto scale = target_size / static_cast<float>(tex_size.y);
+      emoji.setScale(scale, scale);
+
       emoji.setPosition(x, y - scroll_pos);
-      emoji.setScale(0.8f, 0.8f);
       m_window.draw(emoji);
     }
   }

@@ -14,11 +14,11 @@ void ScrollBar::update(int content_height, int viewport_height) {
 }
 
 void ScrollBar::draw() {
-  constexpr float width = 20.f;
+  constexpr float width{20.f};
 
-  const float content_h = static_cast<float>(m_state.content_height);
-  const float viewport_h = static_cast<float>(m_state.viewport_height);
-  const float scroll_pos = static_cast<float>(m_state.scroll_pos);
+  const auto content_h = static_cast<float>(m_state.content_height);
+  const auto viewport_h = static_cast<float>(m_state.viewport_height);
+  const auto scroll_pos = static_cast<float>(m_state.scroll_pos);
 
   if (content_h <= viewport_h) {
     return;
@@ -32,8 +32,8 @@ void ScrollBar::draw() {
   m_window.draw(m_container);
 
   // Thumb
-  const float thumb_h = viewport_h * (viewport_h / content_h);
-  const float thumb_y = scroll_pos * (viewport_h / content_h);
+  const auto thumb_h = viewport_h * (viewport_h / content_h);
+  const auto thumb_y = scroll_pos * (viewport_h / content_h);
 
   m_thumb.setSize(sf::Vector2f{width, thumb_h});
   m_thumb.setPosition(
@@ -49,7 +49,7 @@ void ScrollBar::draw() {
     return;
   }
 
-  m_thumb.setFillColor(hovered ? sf::Color::White : sf::Color(192, 192, 192));
+  m_thumb.setFillColor(hovered ? sf::Color(180, 180, 180) : sf::Color(192, 192, 192));
 
   m_window.draw(m_thumb);
 }
