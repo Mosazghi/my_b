@@ -31,8 +31,8 @@ class Browser {
 
   sf::RenderWindow& m_window;
   sf::Font m_font;
-  std::vector<common::PositionTextPair> m_display_list;
-  std::string m_text_content;
+  std::vector<layout::PositionTextPair> m_display_list;
+  std::vector<layout::Token> m_text_content;
   bool m_running{};
 
   Logger& logger = Logger::getInstance();

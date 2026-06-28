@@ -1,4 +1,5 @@
 #include "File.hpp"
+#include <cstring>
 #include <fstream>
 #include <optional>
 #include <string>
@@ -12,7 +13,9 @@ std::optional<std::string> read(const std::string& path) {
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    logger.warn("Could not open the file '{}'", path);
+    const auto error = errno;
+    logger.warn("file: could not open the file '{}': {}", path,
+                strerror(error));
     return {};
   }
 

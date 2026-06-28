@@ -1,16 +1,23 @@
 #include "common.hpp"
+#include <openssl/evp.h>
 #include <unicode/uchar.h>
 #include <unicode/urename.h>
+#include <SFML/Graphics/Text.hpp>
 #include <SFML/System/String.hpp>
 #include <iomanip>
+#include <iostream>
 #include <regex>
-#include "const.hpp"
+#include <sstream>
+#include <vector>
 
 namespace common {
 
-std::string lex(std::string& body) {
+std::vector<layout::Token> lex(std::string& body) {
   bool in_tag{};
-  std::string text{};
+  std::string buffer{};
+  std::vector<layout::Token> result{};
+
+  using namespace layout;
 
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
@@ -18,13 +25,22 @@ std::string lex(std::string& body) {
   for (const auto& c : body) {
     if (c == '<') {
       in_tag = true;
+      if (!buffer.empty()) {
+        result.emplace_back(Text(buffer));
+      }
+      buffer.clear();
     } else if (c == '>') {
       in_tag = false;
-    } else if (!in_tag) {
-      text += c;
+      result.emplace_back(Tag(buffer));
+      buffer.clear();
+    } else {
+      buffer += c;
     }
   }
-  return text;
+  if (!in_tag and !buffer.empty()) {
+    result.emplace_back(Text(buffer));
+  }
+  return result;
 }
 
 bool isEmoji(sf::Uint32 codepoint) {
@@ -37,41 +53,6 @@ std::string get_emoji_id(sf::Uint32 codepoint) {
   id_stream << std::hex << std::uppercase << std::setfill('0') << std::setw(5)
             << static_cast<uint32_t>(codepoint) << std::dec;
   return id_stream.str();
-}
-
-std::vector<PositionTextPair> layout(const std::string& text,
-                                     int window_width) {
-  std::vector<PositionTextPair> display_list;
-  if (text.empty()) {
-    return display_list;
-  }
-  display_list.reserve(text.size());
-  sf::String decoded = sf::String::fromUtf8(text.begin(), text.end());
-
-  auto cursor_x = consts::HSTEP;
-  auto cursor_y = consts::VSTEP;
-
-  for (const std::uint32_t c : decoded) {
-    DecodedElement element{.type = TextureType::TEXT, .value = c};
-    if (isEmoji(c)) {
-      element.type = TextureType::EMOJI;
-    }
-    display_list.emplace_back(cursor_x, cursor_y, element);
-
-    if (c == U'\n') {
-      cursor_x = consts::HSTEP;
-      cursor_y += consts::VSTEP;
-      continue;
-    }
-    if (cursor_x >= window_width - consts::HSTEP) {
-      cursor_x = consts::HSTEP;
-      cursor_y += consts::VSTEP;
-    }
-
-    cursor_x += consts::HSTEP;
-  }
-
-  return display_list;
 }
 
 }  // namespace common

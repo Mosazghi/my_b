@@ -1,7 +1,19 @@
 [
-  {
-    "label": "Build",
-    "command": "cmake --build build",
-    "use_new_terminal": true,
-  },
+    {
+        "label": "Compile",
+        "command": "./build.sh",
+        "use_new_terminal": false
+    },
+
+    {
+        "label": "Build",
+        "command": "cmake --build build",
+        "use_new_terminal": false
+    },
+
+    {
+        "label": "Run assets index.html",
+        "command": "./build/my_b -u file://$(pwd)/assets/index.html",
+        "use_new_terminal": false
+    }
 ]

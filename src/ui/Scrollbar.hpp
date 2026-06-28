@@ -31,6 +31,7 @@ class ScrollBar : public Element {
 
   void mouse_click_scroll(const sf::Event& e);
   void mouse_hold_scroll(const sf::Event& e);
+
   void mouse_scroll(const sf::Event& e);
 
  private:

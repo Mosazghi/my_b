@@ -1,74 +1,58 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.16)
 project(my_b LANGUAGES CXX)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include(FetchContent)
-set(FETCHCONTENT_BASE_DIR "${CMAKE_BINARY_DIR}/_deps" CACHE PATH "FetchContent base dir")
-
-# Google test
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-)
-FetchContent_MakeAvailable(googletest)
-
-
-# SFML
-FetchContent_Declare(
-    SFML
-    GIT_REPOSITORY https://github.com/SFML/SFML.git
-    GIT_TAG        2.6.1
-    GIT_SHALLOW    TRUE
-    EXCLUDE_FROM_ALL
-)
-set(SFML_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
-set(SFML_BUILD_DOC       OFF CACHE BOOL "" FORCE)
-set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
-set(SFML_BUILD_AUDIO     OFF CACHE BOOL "" FORCE)
-set(SFML_BUILD_NETWORK   OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(SFML)
-
-# Zlib
-find_package(ZLIB REQUIRED)
-# ICU
-find_package(ICU REQUIRED COMPONENTS uc)
-
-include_directories(${PROJECT_SOURCE_DIR}/src)
-
-file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
-file(GLOB TEST_SOURCES "${PROJECT_SOURCE_DIR}/tests/*.cpp")
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-list(REMOVE_ITEM SOURCES "${PROJECT_SOURCE_DIR}/src/main.cpp")
+find_package(ZLIB REQUIRED)
+find_package(ICU REQUIRED COMPONENTS uc)
+find_package(OpenSSL REQUIRED)
+find_package(SFML 2.6 REQUIRED COMPONENTS graphics window system)
+find_package(GTest REQUIRED)
 
-add_library(my_b_lib ${SOURCES})
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  message(STATUS "ccache found: ${CCACHE_PROGRAM}")
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
 
+set(SOURCES
+    src/browser/Browser.cpp
+    src/file/File.cpp
+    src/http/HttpClient.cpp
+    src/http/HttpRequest.cpp
+    src/layout/layout.cpp
+    src/resource-manager/ResourceManager.cpp
+    src/ui/Scrollbar.cpp
+    src/url/Url.cpp
+    src/common.cpp
+    src/utils.cpp
+)
+
+add_library(my_b_lib OBJECT ${SOURCES})
+target_include_directories(my_b_lib PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Debug ON")
-  target_compile_definitions(my_b_lib PUBLIC DEBUG=1)
-else ()
+  target_compile_definitions(my_b_lib PRIVATE DEBUG=1)
+else()
   message(STATUS "Debug off")
 endif()
 
-find_package(OpenSSL REQUIRED)
-target_link_libraries(my_b_lib OpenSSL::SSL OpenSSL::Crypto ZLIB::ZLIB
-                      sfml-graphics sfml-window sfml-system ICU::uc)
+target_link_libraries(my_b_lib
+    PRIVATE
+        OpenSSL::SSL OpenSSL::Crypto
+        ZLIB::ZLIB
+        sfml-graphics sfml-window sfml-system
+        ICU::uc
+)
 
-# Main executable
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} my_b_lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE my_b_lib)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
-# Test executable
+# Tests live in their own directory
 enable_testing()
-add_executable(tests ${TEST_SOURCES})
-target_compile_definitions(tests PRIVATE TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests")
-target_link_libraries(tests my_b_lib GTest::gtest_main gmock)
-target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
-
-include(GoogleTest)
-gtest_discover_tests(tests)
+add_subdirectory(tests)

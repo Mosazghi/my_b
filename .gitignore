@@ -1,12 +1,13 @@
 # Prerequisites
 *.d
 .vscode/
-
+compile_commands.json
 # Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
+out/
 
 # Precompiled Headers
 *.gch
