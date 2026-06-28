@@ -29,7 +29,9 @@ jobs:
                     libfreetype-dev \
                     libicu-dev \
                     libz-dev \
-                    libsfml-dev
+                    libsfml-dev \
+                    libgtest-dev \
+                    libgmock-dev
 
             - name: Create ccache directory
               run: mkdir -p ~/.ccache
