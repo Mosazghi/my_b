@@ -18,8 +18,8 @@ if(CCACHE_PROGRAM)
 endif()
 
 set(SOURCES
-    src/browser/browser.cpp
-    src/file/file.cpp
+    src/browser/Browser.cpp
+    src/file/File.cpp
     src/http/HttpClient.cpp
     src/http/HttpRequest.cpp
     src/layout/layout.cpp
