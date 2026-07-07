@@ -5,6 +5,8 @@
 #include <string>
 #include "browser/Browser.hpp"
 #include "http/HttpClient.hpp"
+#include "imgui-SFML.h"
+#include "imgui.h"
 #include "url/Url.hpp"
 
 static Logger& logger = Logger::getInstance();
@@ -40,7 +42,12 @@ int main(int argc, char** argv) {
   }
   sf::RenderWindow window(sf::VideoMode({1280, 720}), "My Browser",
                           sf::Style::Default | sf::Style::Resize);
+  // ImGui::SFML::Init(window);  // Initialize imgui-sfml
   window.setFramerateLimit(60);
+  if (!ImGui::SFML::Init(window)) {
+    logger.err("Failed to initialize ImGui-SFML.");
+    return EXIT_FAILURE;
+  }
 
   auto browser = std::make_unique<browser::Browser>(window);
   auto url = url::URL(url_addr, std::make_shared<http::HttpClient>());

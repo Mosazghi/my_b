@@ -7,10 +7,13 @@
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/Graphics/View.hpp"
 #include "SFML/Window/Event.hpp"
+#include "imgui-SFML.h"
+#include "imgui.h"
 #include "layout/layout.hpp"
 #include "resource-manager/ResourceManager.h"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
+// #define _DEBUG
 namespace browser {
 
 Browser::Browser(sf::RenderWindow& window)
@@ -26,7 +29,7 @@ Browser::Browser(sf::RenderWindow& window)
 void Browser::load(url::URL& url) {
   auto resp = url.request();
   m_text_content = common::lex(resp.response.body);
-  m_display_list =
+  m_display_content =
       layout::compute(m_text_content, m_font, m_window.getSize().x);
 }
 
@@ -88,22 +91,47 @@ void Browser::dispatch_event(const sf::Event& event) {
 }
 
 void Browser::spin() {
+  sf::Clock deltaClock;
   while (m_running && m_window.isOpen()) {
     sf::Event event;
     while (m_window.pollEvent(event)) {
+#ifdef _DEBUG
+      ImGui::SFML::ProcessEvent(m_window, event);
+#endif
       dispatch_event(event);
     }
 
+#ifdef _DEBUG
+    ImGui::SFML::Update(m_window, deltaClock.restart());
+#endif
     m_window.clear(sf::Color::White);
     update_ui_elements();
     draw();
+#ifdef _DEBUG
+    ImGui::SFML::Render(m_window);
+#endif
     m_window.display();
   }
 }
 
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
-  for (const auto& [x, y, element, text] : m_display_list) {
+  const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
+
+#ifdef _DEBUG
+  ImGui::Begin("Debug Info");
+  ImGui::Text("Window size: %d x %d", m_window.getSize().x,
+              m_window.getSize().y);
+  ImGui::Text("Scroll pos: %d", scroll_pos);
+  ImGui::Text("Mouse pos: (%d, %d)", mouse_pos.x, mouse_pos.y);
+  ImGui::End();
+  ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+  // draw vertical line of the middle of window
+  draw_list->AddLine(ImVec2(m_window.getSize().x / 2, 0),
+                     ImVec2(m_window.getSize().x / 2, m_window.getSize().y),
+                     IM_COL32(0, 0, 255, 255), 1.0f);
+#endif
+  for (auto& [x, y, element, text] : m_display_content) {
     if (y > scroll_pos + m_window.getSize().y) {
       continue;
     }
@@ -112,14 +140,48 @@ void Browser::draw() {
     }
 
     if (element.type == layout::LayoutElementType::TEXT) {
-      sf::String glyph(element.value);
-      sf::Text character(glyph, m_font, text.getCharacterSize());
-      character.setStyle(text.getStyle());
-      character.setFillColor(sf::Color::Black);
-      const auto bounds = character.getLocalBounds();
-      character.setOrigin(bounds.left, bounds.top);
-      character.setPosition(x, y - scroll_pos);
-      m_window.draw(character);
+      text.setPosition(x, y - scroll_pos);
+      m_window.draw(text);
+
+#ifdef _DEBUG
+      const sf::FloatRect bounds = text.getGlobalBounds();
+      auto front = std::get<3>(m_display_content.front());
+      auto back = std::get<3>(m_display_content.back());
+      auto line_width = back.getGlobalBounds().left +
+                        back.getGlobalBounds().width - front.getPosition().x;
+      auto line_widht_middle = line_width / 2.0f + front.getPosition().x;
+      // draw line width
+      draw_list->AddLine(ImVec2(line_widht_middle, 0),
+                         ImVec2(line_widht_middle, m_window.getSize().y),
+                         IM_COL32(255, 100, 132, 255));
+
+      draw_list->AddRect(
+          ImVec2(front.getPosition().x, front.getPosition().y),
+          ImVec2(back.getPosition().x + back.getGlobalBounds().width,
+                 back.getPosition().y + back.getGlobalBounds().height),
+          IM_COL32(0, 255, 0, 255), 0.0f, 0, 1.5f);
+
+      draw_list->AddLine(ImVec2(0, front.getPosition().y),
+                         ImVec2(front.getPosition().x, front.getPosition().y),
+                         IM_COL32(255, 0, 132, 255));
+      draw_list->AddLine(
+          ImVec2(back.getGlobalBounds().left + back.getGlobalBounds().width,
+                 back.getPosition().y),
+          ImVec2(m_window.getSize().x, back.getPosition().y),
+          IM_COL32(255, 0, 132, 255));
+
+      if (bounds.contains(static_cast<sf::Vector2f>(mouse_pos))) {
+        draw_list->AddRect(
+            ImVec2(bounds.left, bounds.top),
+            ImVec2(bounds.left + bounds.width, bounds.top + bounds.height),
+            IM_COL32(255, 0, 0, 255), 0.0f, 0, 1.5f);
+
+        ImGui::SetTooltip(
+            "Text: \"%s\"\nPos: (%.1f, %.1f)\nSize: %.1f x %.1f\nFont size: %i",
+            text.getString().toAnsiString().c_str(), bounds.left, bounds.top,
+            bounds.width, bounds.height, text.getCharacterSize());
+      }
+#endif
     } else {
       std::string id = common::get_emoji_id(element.value[0]);
       auto texture = resource::ResourceManager::get_texture(id);
@@ -142,14 +204,14 @@ void Browser::draw() {
 }
 
 void Browser::update_ui_elements() {
-  if (!m_display_list.empty()) {
-    m_scroll_bar.update(std::get<1>(m_display_list.back()),
+  if (!m_display_content.empty()) {
+    m_scroll_bar.update(std::get<1>(m_display_content.back()),
                         static_cast<int>(m_window.getSize().y));
   }
 }
 
 void Browser::relayout_for_current_window_width() {
-  m_display_list =
+  m_display_content =
       layout::compute(m_text_content, m_font, m_window.getSize().x);
 }
 

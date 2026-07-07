@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(my_b LANGUAGES CXX)
+include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +12,29 @@ find_package(OpenSSL REQUIRED)
 find_package(SFML 2.6 REQUIRED COMPONENTS graphics window system)
 find_package(GTest REQUIRED)
 
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.90.9
+)
+FetchContent_MakeAvailable(imgui)
+
+FetchContent_Declare(
+    imgui-sfml
+    GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
+    GIT_TAG 2.6.x
+)
+set(IMGUI_DIR ${imgui_SOURCE_DIR} CACHE PATH "" FORCE)
+set(IMGUI_SFML_FIND_SFML OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(imgui-sfml)
+add_library(imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+)
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
   message(STATUS "ccache found: ${CCACHE_PROGRAM}")
@@ -47,10 +71,14 @@ target_link_libraries(my_b_lib
         ZLIB::ZLIB
         sfml-graphics sfml-window sfml-system
         ICU::uc
+        ImGui-SFML::ImGui-SFML
 )
-
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE my_b_lib)
+target_link_libraries(${PROJECT_NAME}
+        PRIVATE
+        my_b_lib
+        ImGui-SFML::ImGui-SFML
+)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
 # Tests live in their own directory
