@@ -1,9 +1,7 @@
 #include "layout.hpp"
 #include <cmath>
-#include <iostream>
 #include <sstream>
 #include "common.hpp"
-#include "imgui.h"
 #include "resource-manager/ResourceManager.h"
 
 namespace layout {
@@ -126,16 +124,11 @@ static void flush_line(LayoutContext& ctx) {
       if (element.tag.has_value() &&
           (element.tag->tag == "h1" ||
            element.tag->rest.find("text-center") != std::string::npos)) {
-        std::cout << "\tcentered: " << text.getString().toAnsiString()
-                  << std::endl;
         return true;
       }
     }
     return false;
   }();
-  std::cout << "line_should_be_centered: " << line_should_be_centered
-            << std::endl;
-
   const float first_x = std::get<0>(ctx.line.front());
   const float last_x = std::get<0>(ctx.line.back());
   const float last_word_w = std::get<2>(ctx.line.back()).getLocalBounds().width;
