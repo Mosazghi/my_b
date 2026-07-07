@@ -9,6 +9,7 @@
 #include <regex>
 #include <sstream>
 #include <vector>
+#include "utils.hpp"
 
 namespace common {
 
@@ -26,18 +27,31 @@ std::vector<layout::Token> lex(std::string& body) {
     if (c == '<') {
       in_tag = true;
       if (!buffer.empty()) {
+        utils::trim(buffer);
         result.emplace_back(Text(buffer));
       }
       buffer.clear();
     } else if (c == '>') {
       in_tag = false;
-      result.emplace_back(Tag(buffer));
+      std::string rest = "";
+      const auto first_space = buffer.find(' ');
+      if (first_space != std::string::npos) {
+        rest = buffer.substr(first_space, buffer.size() - 1);
+      }
+      if (first_space != std::string::npos) {
+        buffer = buffer.substr(0, first_space);
+      } else {
+        buffer = std::regex_replace(buffer, std::regex("\\s+"), "");
+      }
+
+      result.emplace_back(Tag(buffer, rest));
       buffer.clear();
     } else {
       buffer += c;
     }
   }
   if (!in_tag and !buffer.empty()) {
+    utils::trim(buffer);
     result.emplace_back(Text(buffer));
   }
   return result;

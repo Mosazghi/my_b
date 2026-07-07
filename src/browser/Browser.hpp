@@ -31,7 +31,7 @@ class Browser {
 
   sf::RenderWindow& m_window;
   sf::Font m_font;
-  std::vector<layout::PositionTextPair> m_display_list;
+  std::vector<layout::PositionTextPair> m_display_content;
   std::vector<layout::Token> m_text_content;
   bool m_running{};
 

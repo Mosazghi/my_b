@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <variant>
@@ -14,36 +15,39 @@ inline constexpr auto VSTEP = 15;
 
 enum class LayoutElementType : std::uint8_t { EMOJI, TEXT };
 
-struct LayoutElement {
-  LayoutElementType type;
-  sf::String value{};
-};
-
 struct Text {
-  std::string text;
+  std::string text{};
   explicit Text(std::string t) : text(std::move(t)) {}
 };
 
 struct Tag {
-  std::string tag;
-  explicit Tag(std::string t) : tag(std::move(t)) {}
+  std::string tag{};
+  std::string rest{};
+  explicit Tag(std::string t, std::string r)
+      : tag(std::move(t)), rest(std::move(r)) {}
+};
+struct LayoutElement {
+  LayoutElementType type{};
+  sf::String value{};
+  std::optional<Tag> tag{};
 };
 
 using Token = std::variant<Text, Tag>;
-
-using Token = std::variant<Text, Tag>;
-using PositionTextPair = std::tuple<double, double, LayoutElement, sf::Text>;
-using Line = std::tuple<double, LayoutElement, sf::Text>;
+using X = double;
+using Y = double;
+using PositionTextPair = std::tuple<X, Y, LayoutElement, sf::Text>;
+using LineElement = std::tuple<X, LayoutElement, sf::Text>;
 
 struct LayoutContext {
-  int size{12};
+  int size{16};
   int window_width{};
   double cursor_x{HSTEP};
   double cursor_y{VSTEP};
   std::string style{"roman"};
   std::string weight{"normal"};
-  std::vector<PositionTextPair> display_list{};
-  std::vector<Line> line{};
+  const Tag* current_tag{nullptr};
+  std::vector<PositionTextPair> display_content{};
+  std::vector<LineElement> line{};
   sf::Font& font;
 };
 

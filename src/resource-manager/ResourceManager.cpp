@@ -4,6 +4,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <system_error>
 #include <tuple>
 #include "SFML/Graphics/Texture.hpp"
 #include "layout/layout.hpp"
@@ -44,7 +45,12 @@ std::tuple<sf::Text, sf::String> ResourceManager::get_font(
     if (ctx.style == "italic") {
       style |= sf::Text::Italic;
     }
+
+    sf_text.setFillColor(sf::Color::Black);
+    const auto bounds = sf_text.getLocalBounds();
+    sf_text.setOrigin(bounds.left, bounds.top);
     sf_text.setStyle(style);
+
     m_font_cache[key] = std::make_tuple(sf_text, sf_word);
   }
 
