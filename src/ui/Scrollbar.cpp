@@ -49,7 +49,8 @@ void ScrollBar::draw() {
     return;
   }
 
-  m_thumb.setFillColor(hovered ? sf::Color(180, 180, 180) : sf::Color(192, 192, 192));
+  m_thumb.setFillColor(hovered ? sf::Color(180, 180, 180)
+                               : sf::Color(192, 192, 192));
 
   m_window.draw(m_thumb);
 }

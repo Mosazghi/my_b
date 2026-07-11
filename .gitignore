@@ -1,6 +1,6 @@
 # Prerequisites
+__cmake_systeminformation/
 *.d
-.vscode/
 compile_commands.json
 # Compiled Object files
 *.slo

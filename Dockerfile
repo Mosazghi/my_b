@@ -18,8 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libclang-dev \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /workspace
 
+RUN useradd -m -s /bin/bash mosa \
+    && echo "mosa ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/mosa \
+    && chmod 0440 /etc/sudoers.d/mosa
 
+USER mosa
 
 CMD ["/bin/bash"]

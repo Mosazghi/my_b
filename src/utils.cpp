@@ -10,8 +10,9 @@
 
 namespace utils {
 std::vector<std::string> split_string(const std::string& s, char delim) {
-  if (s.empty()) { return {""};
-}
+  if (s.empty()) {
+    return {""};
+  }
   std::vector<std::string> strings;
   std::string temp;
   std::istringstream ss(s);
@@ -30,10 +31,11 @@ static void ltrim(std::string& s) {
 }
 
 static void rtrim(std::string& s) {
-  s.erase(std::ranges::find_if(std::ranges::reverse_view(s),
-                       [](unsigned char ch) { return !std::isspace(ch); })
-              .base(),
-          s.end());
+  s.erase(
+      std::ranges::find_if(std::ranges::reverse_view(s),
+                           [](unsigned char ch) { return !std::isspace(ch); })
+          .base(),
+      s.end());
 }
 
 void trim(std::string& s) {
@@ -42,8 +44,9 @@ void trim(std::string& s) {
 }
 
 std::optional<std::string> ungzip(std::string_view compressed) {
-  if (compressed.empty()) { return {};
-}
+  if (compressed.empty()) {
+    return {};
+  }
 
   z_stream strm{};
   strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));

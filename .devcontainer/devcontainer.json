@@ -1,29 +1,46 @@
 {
-    "name": "cpp-sfml-dev",
-    "build": {
-        "dockerfile": "../Dockerfile"
+  "name": "cpp-sfml-dev",
+  "build": {
+    "dockerfile": "../Dockerfile",
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "configureZshAsDefaultShell": true,
     },
-    "features": {
-        "ghcr.io/devcontainers/features/git:1": {}
+    "ghcr.io/devcontainer-community/devcontainer-features/lazygit:1": {},
+    "ghcr.io/devcontainer-community/devcontainer-features/bat:1": {},
+    "ghcr.io/devcontainers-extra/features/eza:1": {},
+  },
+  "postCreateCommand": "echo \"alias lg='lazygit'\" >> ~/.zshrc && echo \"alias cat='bat --style=plain'\" >> ~/.zshrc && echo \"alias ls='eza --icons --group-directories-first'\" >> ~/.zshrc && echo \"alias ll='eza -la --icons --group-directories-first'\" >> ~/.zshrc",
+  "remoteUser": "mosa",
+  "containerUser": "mosa",
+  "mounts": [
+    {
+      "source": "${localEnv:USERPROFILE}/.gitconfig",
+      "target": "/home/mosa/.gitconfig",
+      "type": "bind",
     },
-    "mounts": [
-        "source=${localEnv:USERPROFILE}/.gitconfig,target=/home/vscode/.gitconfig,type=bind,readonly",
-        "source=${localEnv:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
-    ],
-    "containerEnv": {
-        "DISPLAY": "host.docker.internal:0.0"
+    {
+      "source": "${localEnv:USERPROFILE}/.ssh",
+      "target": "/home/mosa/.ssh",
+      "type": "bind",
     },
-    "customizations": {
-        "zed": {
-            "settings": {
-                "lsp": {
-                    "clangd": {
-                        "initialization_options": {
-                            "compilationDatabasePath": "build"
-                        }
-                    }
-                }
-            }
-        }
-    }
+  ],
+  "containerEnv": {
+    "DISPLAY": "host.docker.internal:0.0",
+  },
+  "customizations": {
+    "zed": {
+      "settings": {
+        "lsp": {
+          "clangd": {
+            "initialization_options": {
+              "compilationDatabasePath": "build",
+            },
+          },
+        },
+      },
+    },
+  },
 }
