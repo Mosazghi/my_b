@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libicu-dev \
     libz-dev \
     libssl-dev \
-    libsfml-dev \
     libgtest-dev \
     libgmock-dev \
     clangd \
@@ -22,6 +21,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -m -s /bin/bash mosa \
     && echo "mosa ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/mosa \
     && chmod 0440 /etc/sudoers.d/mosa
+
+# install sfml 2.6
+    RUN apt-get update && apt-get install -y libfreetype-dev libgl1-mesa-dev libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev \
+    && git clone --depth 1 --branch 2.6.x https://github.com/SFML/SFML.git /tmp/sfml \
+    && cmake -S /tmp/sfml -B /tmp/sfml/build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /tmp/sfml/build --target install \
+    && rm -rf /tmp/sfml
 
 USER mosa
 

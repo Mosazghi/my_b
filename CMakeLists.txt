@@ -23,6 +23,8 @@ FetchContent_Declare(
     imgui-sfml
     GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
     GIT_TAG 2.6.x
+    PATCH_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/patch_imgui_sfml.cmake ${CMAKE_BINARY_DIR}/_deps/imgui-sfml-src/imgui-SFML.cpp
+    UPDATE_DISCONNECTED 1
 )
 set(IMGUI_DIR ${imgui_SOURCE_DIR} CACHE PATH "" FORCE)
 set(IMGUI_SFML_FIND_SFML OFF CACHE BOOL "" FORCE)

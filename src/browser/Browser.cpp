@@ -116,9 +116,9 @@ void Browser::spin() {
 
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
-  const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
 
 #ifdef _DEBUG
+  const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
   ImGui::Begin("Debug Info");
   ImGui::Text("Window size: %d x %d", m_window.getSize().x,
               m_window.getSize().y);
