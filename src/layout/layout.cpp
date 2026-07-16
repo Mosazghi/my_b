@@ -1,7 +1,9 @@
 #include "layout.hpp"
 #include <cmath>
+#include <iostream>
 #include <sstream>
 #include "common.hpp"
+#include "logger.hpp"
 #include "resource-manager/ResourceManager.h"
 
 namespace layout {
@@ -10,6 +12,7 @@ static void process_word(LayoutContext& ctx, const std::string& word);
 static void process_tag(LayoutContext& ctx, const std::string& tag);
 static void process_token(LayoutContext& ctx, const Token& token);
 static void flush_line(LayoutContext& ctx);
+static auto& logger = Logger::getInstance();
 
 static void process_token(LayoutContext& ctx, const Token& token) {
   if (std::holds_alternative<Text>(token)) {
@@ -32,6 +35,23 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
   const float space_width = ctx.font.getGlyph(' ', ctx.size, has_bold).advance;
 
   auto [text, sf_word] = resource::ResourceManager::get_font(word, ctx);
+
+  const std::optional<sf::Text> prev_text =
+      ctx.line.empty()
+          ? std::nullopt
+          : std::make_optional(std::get<sf::Text>(ctx.line.back()));
+  if (ctx.current_tag->tag == "sup" && prev_text.has_value()) {
+    logger.dbg("text pos before : ({}, {})", text.getPosition().x,
+               text.getPosition().y);
+    const float x_pos =
+        prev_text->getGlobalBounds().left + prev_text->getGlobalBounds().width;
+    const float y_offset = prev_text->getCharacterSize();
+    const float y_pos = prev_text->getPosition().y - y_offset;
+    const auto bounds = text.getLocalBounds();
+    text.setOrigin({bounds.width / 2, bounds.height / 2});
+    logger.dbg("text pos after : ({}, {})", text.getPosition().x,
+               text.getPosition().y);
+  }
 
   auto word_width = text.getLocalBounds().width;
 
@@ -82,6 +102,8 @@ static void process_tag(LayoutContext& ctx, const std::string& tag) {
          c.size -= 10;
          flush_line(c);
        }},
+      {"sup", [](LayoutContext& c) { c.size -= TEXT_SUP; }},
+      {"/sup", [](LayoutContext& c) { c.size += TEXT_SUP; }},
   };
 
   if (const auto it = tag_actions.find(tag); it != tag_actions.end()) {

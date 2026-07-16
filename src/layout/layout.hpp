@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SFML/Window/Event.hpp>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -10,8 +11,15 @@
 #include "SFML/System/String.hpp"
 namespace layout {
 
-inline constexpr auto HSTEP = 13;
-inline constexpr auto VSTEP = 15;
+inline constexpr auto HSTEP{13};
+inline constexpr auto VSTEP{15};
+enum TextSize : std::uint8_t {
+  TEXT_LARGE = 17,
+  TEXT_MEDIUM = 16,
+  TEXT_NORMAL = 15,
+  TEXT_SMALL = 13,
+  TEXT_SUP = TEXT_MEDIUM / 2
+};
 
 enum class LayoutElementType : std::uint8_t { EMOJI, TEXT };
 
@@ -39,7 +47,7 @@ using PositionTextPair = std::tuple<X, Y, LayoutElement, sf::Text>;
 using LineElement = std::tuple<X, LayoutElement, sf::Text>;
 
 struct LayoutContext {
-  int size{16};
+  int size{TEXT_NORMAL};
   int window_width{};
   double cursor_x{HSTEP};
   double cursor_y{VSTEP};

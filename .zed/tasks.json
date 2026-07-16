@@ -7,7 +7,7 @@
 
     {
         "label": "Build",
-        "command": "cmake --build build",
+        "command": "cmake --build build --target my_b",
         "use_new_terminal": false
     },
 

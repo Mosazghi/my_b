@@ -13,7 +13,7 @@
 #include "resource-manager/ResourceManager.h"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
-// #define _DEBUG
+#define _DEBUG
 namespace browser {
 
 Browser::Browser(sf::RenderWindow& window)
@@ -92,6 +92,9 @@ void Browser::dispatch_event(const sf::Event& event) {
 
 void Browser::spin() {
   sf::Clock deltaClock;
+  sf::Clock fpsClock;
+  unsigned int frameCount = 0;
+  float currentFPS = 0.0f;
   while (m_running && m_window.isOpen()) {
     sf::Event event;
     while (m_window.pollEvent(event)) {
@@ -102,7 +105,18 @@ void Browser::spin() {
     }
 
 #ifdef _DEBUG
-    ImGui::SFML::Update(m_window, deltaClock.restart());
+    auto dt = deltaClock.restart();
+    ImGui::SFML::Update(m_window, dt);
+    frameCount++;
+    if (fpsClock.getElapsedTime().asSeconds() >= 0.5f) {
+      currentFPS = frameCount / fpsClock.restart().asSeconds();
+      frameCount = 0;
+    }
+    // draw using imgui
+    ImGui::Begin("Performance Statistics");
+    ImGui::Text("FPS: %.0f", currentFPS);
+    ImGui::Text("Frame Time: %.2d ms", dt.asMilliseconds());
+    ImGui::End();
 #endif
     m_window.clear(sf::Color::White);
     update_ui_elements();
@@ -112,12 +126,13 @@ void Browser::spin() {
 #endif
     m_window.display();
   }
+  ImGui::SFML::Shutdown();
 }
 
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
 
-#ifdef _DEBUG
+#ifndef  _DEBUG
   const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
   ImGui::Begin("Debug Info");
   ImGui::Text("Window size: %d x %d", m_window.getSize().x,
@@ -143,7 +158,7 @@ void Browser::draw() {
       text.setPosition(x, y - scroll_pos);
       m_window.draw(text);
 
-#ifdef _DEBUG
+#ifndef _DEBUG
       const sf::FloatRect bounds = text.getGlobalBounds();
       auto front = std::get<3>(m_display_content.front());
       auto back = std::get<3>(m_display_content.back());

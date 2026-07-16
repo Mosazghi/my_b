@@ -9,7 +9,7 @@ if [ ! -d "$BUILD_DIR" ]; then
 fi
 
 
-cmake --build build -- -j "$(nproc)"
+cmake --build build --target my_b -- -j "$(nproc)"
 
 
 echo "Finished building"
