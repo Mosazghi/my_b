@@ -1,4 +1,6 @@
 #include "Browser.hpp"
+#include <fmt/base.h>
+#include <fmt/core.h>
 #include <openssl/evp.h>
 #include <SFML/Graphics.hpp>
 #include <utility>
@@ -132,7 +134,7 @@ void Browser::spin() {
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
 
-#ifndef  _DEBUG
+#ifdef _DEBUG
   const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
   ImGui::Begin("Debug Info");
   ImGui::Text("Window size: %d x %d", m_window.getSize().x,
@@ -158,7 +160,7 @@ void Browser::draw() {
       text.setPosition(x, y - scroll_pos);
       m_window.draw(text);
 
-#ifndef _DEBUG
+#ifdef _DEBUG
       const sf::FloatRect bounds = text.getGlobalBounds();
       auto front = std::get<3>(m_display_content.front());
       auto back = std::get<3>(m_display_content.back());

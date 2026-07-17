@@ -6,36 +6,37 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(ZLIB REQUIRED)
+find_package(ZLIB CONFIG REQUIRED)
 find_package(ICU REQUIRED COMPONENTS uc)
-find_package(OpenSSL REQUIRED)
-find_package(SFML 2.6 REQUIRED COMPONENTS graphics window system)
-find_package(GTest REQUIRED)
+find_package(OpenSSL CONFIG REQUIRED)
+find_package(SFML 2.6 CONFIG REQUIRED COMPONENTS graphics window system)
+find_package(GTest CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.90.9
-)
+     imgui
+     GIT_REPOSITORY https://github.com/ocornut/imgui.git
+     GIT_TAG v1.90.9
+ )
 FetchContent_MakeAvailable(imgui)
 
 FetchContent_Declare(
-    imgui-sfml
-    GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
-    GIT_TAG 2.6.x
-    PATCH_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/patch_imgui_sfml.cmake ${CMAKE_BINARY_DIR}/_deps/imgui-sfml-src/imgui-SFML.cpp
-    UPDATE_DISCONNECTED 1
-)
+     imgui-sfml
+     GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
+     GIT_TAG 2.6.x
+     PATCH_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/patch_imgui_sfml.cmake ${CMAKE_BINARY_DIR}/_deps/imgui-sfml-src/imgui-SFML.cpp
+     UPDATE_DISCONNECTED 1
+ )
 set(IMGUI_DIR ${imgui_SOURCE_DIR} CACHE PATH "" FORCE)
 set(IMGUI_SFML_FIND_SFML OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(imgui-sfml)
 add_library(imgui STATIC
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-)
+     ${imgui_SOURCE_DIR}/imgui.cpp
+     ${imgui_SOURCE_DIR}/imgui_draw.cpp
+     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+     ${imgui_SOURCE_DIR}/imgui_tables.cpp
+     ${imgui_SOURCE_DIR}/imgui_demo.cpp
+ )
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
@@ -80,6 +81,7 @@ target_link_libraries(${PROJECT_NAME}
         PRIVATE
         my_b_lib
         ImGui-SFML::ImGui-SFML
+        fmt::fmt
 )
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 

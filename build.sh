@@ -5,7 +5,10 @@ set -e
 
 
 if [ ! -d "$BUILD_DIR" ]; then
-    cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G "Ninja"
+    cmake --preset=default \
+        -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -G "Ninja"
 fi
 
 
