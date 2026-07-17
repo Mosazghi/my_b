@@ -26,8 +26,8 @@ class ScrollBar : public Element {
 
   void update(int content_height, int viewport_height);
   void draw() override;
-  int get_current_roll_pos() const { return m_state.scroll_pos; }
-  float get_width() const { return SCROLL_BAR_WIDTH; }
+  [[nodiscard]] int get_current_roll_pos() const { return m_state.scroll_pos; }
+  [[nodiscard]] float get_width() const { return SCROLL_BAR_WIDTH; }
 
   void mouse_click_scroll(const sf::Event& e);
   void mouse_hold_scroll(const sf::Event& e);
@@ -35,7 +35,7 @@ class ScrollBar : public Element {
   void mouse_scroll(const sf::Event& e);
 
  private:
-  float get_scroll_pos_from_mouse(const sf::Vector2i& mouse_pos) const;
+  [[nodiscard]] float get_scroll_pos_from_mouse(const sf::Vector2i& mouse_pos) const;
   void set_scroll_pos(float pos);
   sf::RectangleShape m_container;
   sf::RectangleShape m_thumb;

@@ -144,9 +144,9 @@ void Browser::draw() {
   ImGui::End();
   ImDrawList* draw_list = ImGui::GetForegroundDrawList();
   // draw vertical line of the middle of window
-  draw_list->AddLine(ImVec2(m_window.getSize().x / 2, 0),
-                     ImVec2(m_window.getSize().x / 2, m_window.getSize().y),
-                     IM_COL32(0, 0, 255, 255), 1.0f);
+  // draw_list->AddLine(ImVec2(m_window.getSize().x / 2, 0),
+  //                    ImVec2(m_window.getSize().x / 2, m_window.getSize().y),
+  //                    IM_COL32(0, 0, 255, 255), 1.0f);
 #endif
   for (auto& [x, y, element, text] : m_display_content) {
     if (y > scroll_pos + m_window.getSize().y) {
@@ -156,37 +156,36 @@ void Browser::draw() {
       continue;
     }
 
-    if (element.type == layout::LayoutElementType::TEXT) {
+    if (element.type == layout::LayoutElementType::Text) {
       text.setPosition(x, y - scroll_pos);
       m_window.draw(text);
-
 #ifdef _DEBUG
       const sf::FloatRect bounds = text.getGlobalBounds();
-      auto front = std::get<3>(m_display_content.front());
-      auto back = std::get<3>(m_display_content.back());
-      auto line_width = back.getGlobalBounds().left +
-                        back.getGlobalBounds().width - front.getPosition().x;
-      auto line_widht_middle = line_width / 2.0f + front.getPosition().x;
-      // draw line width
-      draw_list->AddLine(ImVec2(line_widht_middle, 0),
-                         ImVec2(line_widht_middle, m_window.getSize().y),
-                         IM_COL32(255, 100, 132, 255));
-
-      draw_list->AddRect(
-          ImVec2(front.getPosition().x, front.getPosition().y),
-          ImVec2(back.getPosition().x + back.getGlobalBounds().width,
-                 back.getPosition().y + back.getGlobalBounds().height),
-          IM_COL32(0, 255, 0, 255), 0.0f, 0, 1.5f);
-
-      draw_list->AddLine(ImVec2(0, front.getPosition().y),
-                         ImVec2(front.getPosition().x, front.getPosition().y),
-                         IM_COL32(255, 0, 132, 255));
-      draw_list->AddLine(
-          ImVec2(back.getGlobalBounds().left + back.getGlobalBounds().width,
-                 back.getPosition().y),
-          ImVec2(m_window.getSize().x, back.getPosition().y),
-          IM_COL32(255, 0, 132, 255));
-
+      // auto front = std::get<3>(m_display_content.front());
+      // auto back = std::get<3>(m_display_content.back());
+      // auto line_width = back.getGlobalBounds().left +
+      //                   back.getGlobalBounds().width - front.getPosition().x;
+      // auto line_widht_middle = line_width / 2.0f + front.getPosition().x;
+      // // draw line width
+      // draw_list->AddLine(ImVec2(line_widht_middle, 0),
+      //                    ImVec2(line_widht_middle, m_window.getSize().y),
+      //                    IM_COL32(255, 100, 132, 255));
+      //
+      // draw_list->AddRect(
+      //     ImVec2(front.getPosition().x, front.getPosition().y),
+      //     ImVec2(back.getPosition().x + back.getGlobalBounds().width,
+      //            back.getPosition().y + back.getGlobalBounds().height),
+      //     IM_COL32(0, 255, 0, 255), 0.0f, 0, 1.5f);
+      //
+      // draw_list->AddLine(ImVec2(0, front.getPosition().y),
+      //                    ImVec2(front.getPosition().x,
+      //                    front.getPosition().y), IM_COL32(255, 0, 132, 255));
+      // draw_list->AddLine(
+      //     ImVec2(back.getGlobalBounds().left + back.getGlobalBounds().width,
+      //            back.getPosition().y),
+      //     ImVec2(m_window.getSize().x, back.getPosition().y),
+      //     IM_COL32(255, 0, 132, 255));
+      //
       if (bounds.contains(static_cast<sf::Vector2f>(mouse_pos))) {
         draw_list->AddRect(
             ImVec2(bounds.left, bounds.top),

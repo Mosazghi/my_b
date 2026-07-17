@@ -13,15 +13,19 @@ namespace layout {
 
 inline constexpr auto HSTEP{13};
 inline constexpr auto VSTEP{15};
-enum TextSize : std::uint8_t {
-  TEXT_LARGE = 17,
-  TEXT_MEDIUM = 16,
-  TEXT_NORMAL = 15,
-  TEXT_SMALL = 13,
-  TEXT_SUP = TEXT_MEDIUM / 2
+
+namespace TextSize {
+enum : std::uint8_t {
+  Large = 16,
+  Medium = 14,
+  Normal = 11,
+  Small = 9,
+  Super = Medium / 2
+};
 };
 
-enum class LayoutElementType : std::uint8_t { EMOJI, TEXT };
+enum class LayoutElementType : std::uint8_t { Emoji, Text };
+enum class VerticalAlign : std::uint8_t { Baseline, Super, Sub };
 
 struct Text {
   std::string text{};
@@ -38,6 +42,7 @@ struct LayoutElement {
   LayoutElementType type{};
   sf::String value{};
   std::optional<Tag> tag{};
+  VerticalAlign vertical_align{VerticalAlign::Baseline};
 };
 
 using Token = std::variant<Text, Tag>;
@@ -47,16 +52,17 @@ using PositionTextPair = std::tuple<X, Y, LayoutElement, sf::Text>;
 using LineElement = std::tuple<X, LayoutElement, sf::Text>;
 
 struct LayoutContext {
-  int size{TEXT_NORMAL};
+  int size{TextSize::Normal};
   int window_width{};
   double cursor_x{HSTEP};
   double cursor_y{VSTEP};
   std::string style{"roman"};
   std::string weight{"normal"};
   const Tag* current_tag{nullptr};
+  VerticalAlign vertical_align{VerticalAlign::Baseline};
+  sf::Font& font;
   std::vector<PositionTextPair> display_content{};
   std::vector<LineElement> line{};
-  sf::Font& font;
 };
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,

@@ -331,7 +331,7 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
       .body = body};
 }
 
-std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
+std::optional<HttpResponse> HttpClient::https_req(const HttpReqParams& params,
                                                   std::string_view buffer) {
   std::string key = get_cache_key(params);
 

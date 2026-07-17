@@ -22,7 +22,7 @@ struct HttpRequestBuilder {
   HttpRequestBuilder& with_header(const std::string& key,
                                   const std::string& value);
   HttpRequestBuilder& with_body(const std::string& b);
-  std::string build() const;
+  [[nodiscard]] std::string build() const;
 };
 
 enum class HttpPort : std::uint16_t {
@@ -58,8 +58,8 @@ struct HttpResult {
   Errors errors;
   int redirect_count;
 
-  bool is_success() const;
-  bool has_error() const;
+  [[nodiscard]] bool is_success() const;
+  [[nodiscard]] bool has_error() const;
 };
 
 struct HttpRespCache {
