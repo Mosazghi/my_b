@@ -21,7 +21,7 @@ class URL : public IUrl {
 
  public:
   struct Data {
-    Scheme scheme;
+    Scheme scheme{Scheme::UNKNOWN};
     std::string host;
     std::optional<int> port;
     std::string path;
