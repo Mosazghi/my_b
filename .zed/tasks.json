@@ -15,5 +15,26 @@
         "label": "Run assets index.html",
         "command": "./build/my_b -u file://$(pwd)/assets/index.html",
         "use_new_terminal": false
+    },
+
+    {
+        "label": "GTest: Build",
+        "command": "make build-tests",
+        "description": "Compiles the project", 
+        "allow_concurrent_runs": false,
+        "use_new_terminal": false
+    },
+    {
+        "label": "GTest: Build & Run All",
+        "command": "mkdir -p build && make build-tests && ./build/tests/tests",
+        "description": "Compiles the project and runs ALL tests", 
+        "allow_concurrent_runs": false,
+        "use_new_terminal": false
+    },
+    {
+        "label": "GTest: Run Current File Only",
+        "command": "./build/tests/tests -- --gtest_filter=\"*${ZED_STEM}*\"",
+        "description": "Runs tests matching the current open file name",
+        "allow_concurrent_runs": false
     }
 ]
