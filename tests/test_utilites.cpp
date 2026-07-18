@@ -60,6 +60,18 @@ TEST(Utils, TrimWhitespace) {
   EXPECT_EQ(str, "hello world");
 }
 
+TEST(Utils, TrimAllWhitespaceStringBecomesEmpty) {
+  std::string str = "   \t  \n  ";
+  utils::trim(str);
+  EXPECT_EQ(str, "");
+}
+
+TEST(Utils, UngzipInvalidDataReturnsNullopt) {
+  const std::string garbage = "this is not gzip data";
+  auto uncompressed = utils::ungzip(garbage);
+  EXPECT_FALSE(uncompressed.has_value());
+}
+
 TEST(Utils, UngzipValidData) {
   const auto file_path = get_mock_data_file_path("gzipped-data.gz");
   auto gzipped_content_opt = file::read(file_path);

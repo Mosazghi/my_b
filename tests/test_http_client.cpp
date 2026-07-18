@@ -1,6 +1,5 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <format>
 #include "http/HttpClient.hpp"
 #include "http/HttpRequest.hpp"
 
