@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <format>
 #include "http/HttpClient.hpp"
 #include "http/HttpRequest.hpp"
 
@@ -8,6 +9,8 @@ class HttpTest : public ::testing::Test {
   void SetUp() override {
     m_http_client = std::make_unique<http::HttpClient>();
   }
+
+  void TearDown() override { m_http_client.reset(); }
   std::unique_ptr<http::HttpClient> m_http_client;
 };
 
@@ -38,6 +41,7 @@ TEST_F(HttpTest, GetReqRedirect) {
   auto resp = m_http_client->get("https://browser.engineering/redirect");
   EXPECT_FALSE(resp.has_error());
   EXPECT_EQ(resp.redirect_count, 1);
+  std::cout << "HELLLO";
 
   auto has_moved_permanently = resp.response.body.find(
       "<head><title>301 Moved Permanently</title></head>");
