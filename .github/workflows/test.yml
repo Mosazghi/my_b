@@ -1,64 +1,62 @@
 name: Run tests
 
 on:
-    push:
+  push:
 
 jobs:
-    build:
-        name: Build on Ubuntu
-        runs-on: ubuntu-latest
+  build:
+    name: Build on Ubuntu
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Install dependencies
-              run: |
-                  apt install -y \
-                    libgl1-mesa-dev \
-                    libx11-dev \
-                    libxrandr-dev \
-                    libxcursor-dev \
-                    libxi-dev \
-                    libudev-dev \
-                    ccache \
-                    cmake \
-                    ninja-build \
-                    libssl-dev \
-                    libfreetype-dev 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ccache cmake ninja-build pkg-config \
+            libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
+            libssl-dev libfreetype-dev \
+            autoconf autoconf-archive automake libtool
 
-            - name: Create ccache directory
-              run: mkdir -p ~/.ccache
-            - name: Setup ccache
-              uses: hendrikmuhs/ccache-action@v1
-              with:
-                  key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-            - name: Cache ccache
-              uses: actions/cache@v4
-              with:
-                  path: ~/.ccache
-                  key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-                  restore-keys: |
-                      ${{ runner.os }}-ccache-
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: "**/vcpkg.json"
 
-            - name: Cache CMake FetchContent
-              uses: actions/cache@v4
-              with:
-                  path: build/_deps
-                  key: ${{ runner.os }}-fetchcontent-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
-                  restore-keys: |
-                      ${{ runner.os }}-fetchcontent-
+      - name: Create ccache directory
+        run: mkdir -p ~/.ccache
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
 
-            - name: Configure
-              run: |
-                  cmake --preset=default \
-                    -G Ninja \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-                    -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - name: Cache CMake FetchContent
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: ${{ runner.os }}-fetchcontent-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-fetchcontent-
 
-            - name: Build
-              run: cmake --build build --target tests -- -j "$(nproc)" --parallel
+      - name: Configure
+        run: |
+          cmake --preset=default \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-            - name: Test
-              run: ./build/tests/tests
+      - name: Build
+        run: cmake --build build --target tests -- -j "$(nproc)"
+
+      - name: Test
+        run: ./build/tests/tests
