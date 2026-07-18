@@ -40,8 +40,8 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
 find_program(CCACHE_PROGRAM ccache)
 if(CCACHE_PROGRAM)
-  message(STATUS "ccache found: ${CCACHE_PROGRAM}")
-  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    message(STATUS "ccache found: ${CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
 endif()
 
 set(SOURCES
@@ -62,10 +62,10 @@ target_include_directories(my_b_lib PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  message(STATUS "Debug ON")
-  target_compile_definitions(my_b_lib PRIVATE DEBUG=1)
+    message(STATUS "Debug ON")
+    target_compile_definitions(my_b_lib PRIVATE DEBUG=1)
 else()
-  message(STATUS "Debug off")
+    message(STATUS "Debug off")
 endif()
 
 target_link_libraries(my_b_lib
@@ -86,5 +86,6 @@ target_link_libraries(${PROJECT_NAME}
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
 # Tests live in their own directory
+include(CTest)
 enable_testing()
 add_subdirectory(tests)
