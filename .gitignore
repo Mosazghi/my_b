@@ -43,3 +43,4 @@ out/
 *.dwo
 build/
 .cache
+Testing/Temporary
