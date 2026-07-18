@@ -26,12 +26,7 @@ jobs:
                     cmake \
                     ninja-build \
                     libssl-dev \
-                    libfreetype-dev \
-                    libicu-dev \
-                    libz-dev \
-                    libsfml-dev \
-                    libgtest-dev \
-                    libgmock-dev
+                    libfreetype-dev 
 
             - name: Create ccache directory
               run: mkdir -p ~/.ccache
@@ -57,14 +52,14 @@ jobs:
 
             - name: Configure
               run: |
-                  cmake -S . -B build \
+                  cmake --preset=default \
                     -G Ninja \
-                    -DCMAKE_BUILD_TYPE=Debug \
+                    -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                     -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
             - name: Build
-              run: cmake --build build --config Debug --parallel
+              run: cmake --build build --target tests -- -j "$(nproc)" --parallel
 
             - name: Test
               run: ctest --test-dir build --output-on-failure
