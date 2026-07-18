@@ -1,7 +1,10 @@
 #include "layout.hpp"
+#include <fmt/base.h>
 #include <cmath>
+#include <iostream>
 #include <sstream>
 #include "common.hpp"
+#include "logger.hpp"
 #include "resource-manager/ResourceManager.h"
 
 namespace layout {
@@ -10,6 +13,7 @@ static void process_word(LayoutContext& ctx, const std::string& word);
 static void process_tag(LayoutContext& ctx, const std::string& tag);
 static void process_token(LayoutContext& ctx, const Token& token);
 static void flush_line(LayoutContext& ctx);
+static auto& logger = Logger::getInstance();
 
 static void process_token(LayoutContext& ctx, const Token& token) {
   if (std::holds_alternative<Text>(token)) {
@@ -35,22 +39,21 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
 
   auto word_width = text.getLocalBounds().width;
 
-  LayoutElement element{.type = LayoutElementType::TEXT,
+  LayoutElement element{.type = LayoutElementType::Text,
                         .value = sf_word,
                         .tag = ctx.current_tag
-
                                    ? std::make_optional(*ctx.current_tag)
-
-                                   : std::nullopt};
+                                   : std::nullopt,
+                        .vertical_align = ctx.vertical_align};
 
   if (!sf_word.isEmpty() && common::isEmoji(sf_word[0])) {
-    element.type = LayoutElementType::EMOJI;
+    element.type = LayoutElementType::Emoji;
   }
   if (ctx.cursor_x + word_width >= ctx.window_width - HSTEP) {
     flush_line(ctx);
   }
   if (ctx.line.size() > 0 &&
-      std::get<1>(ctx.line.back()).type == LayoutElementType::EMOJI) {
+      std::get<1>(ctx.line.back()).type == LayoutElementType::Emoji) {
     ctx.cursor_x += 8;
   }
 
@@ -81,6 +84,28 @@ static void process_tag(LayoutContext& ctx, const std::string& tag) {
        [](LayoutContext& c) {
          c.size -= 10;
          flush_line(c);
+       }},
+      {"sup",
+       [](LayoutContext& c) {
+         c.size -= TextSize::Super;
+
+         c.vertical_align = VerticalAlign::Super;
+       }},
+      {"/sup",
+       [](LayoutContext& c) {
+         c.size += TextSize::Super;
+         c.vertical_align = VerticalAlign::Baseline;
+       }},
+
+      {"sub",
+       [](LayoutContext& c) {
+         c.size -= TextSize::Super;
+         c.vertical_align = VerticalAlign::Sub;
+       }},
+      {"/sub",
+       [](LayoutContext& c) {
+         c.size += TextSize::Super;
+         c.vertical_align = VerticalAlign::Baseline;
        }},
   };
 
@@ -138,10 +163,20 @@ static void flush_line(LayoutContext& ctx) {
 
   size_t j{0};
   for (auto& [x, element, text] : ctx.line) {
-    const auto y = baseline - std::get<0>(metrics[j]);
+    const auto own_ascent = std::get<0>(metrics[j]);
+    auto y = baseline - own_ascent;
     if (line_should_be_centered) {
       x += shift;
     }
+
+    if (element.vertical_align == VerticalAlign::Super) {
+      y -= (max_ascent - own_ascent) * 1.0f;
+      x -= 2.5f;
+    } else if (element.vertical_align == VerticalAlign::Sub) {
+      y += (max_ascent - own_ascent) * 0.3f;
+      x -= 2.5f;
+    }
+
     ctx.display_content.emplace_back(x, y, element, text);
     j++;
   }

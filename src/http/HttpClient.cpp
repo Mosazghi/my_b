@@ -83,8 +83,8 @@ HttpResult HttpClient::get(std::string_view url) {
     }
   }
 
+  static int num_requests = 0;
   auto perform_request = [&](const HttpReqParams& params) -> HttpResult {
-    static int num_requests = 0;
     num_requests++;
     std::optional<http::HttpResponse> response{};
 
@@ -195,6 +195,9 @@ HttpResult HttpClient::get(std::string_view url) {
                         .max_age = max_age};
     }
   }
+
+  // cleanups
+  [&]() { num_requests = 0; }();
 
   return result;
 }
@@ -331,7 +334,7 @@ std::optional<HttpResponse> HttpClient::http_req(const HttpReqParams& params,
       .body = body};
 }
 
-std::optional<HttpResponse> HttpClient::https_req(HttpReqParams params,
+std::optional<HttpResponse> HttpClient::https_req(const HttpReqParams& params,
                                                   std::string_view buffer) {
   std::string key = get_cache_key(params);
 

@@ -35,13 +35,13 @@ class HttpClient : public IHttpClient {
    * @param header HTTP header string
    * @return uint16_t HTTP status code
    */
-  uint16_t get_status_code(const std::string& header) const;
+  [[nodiscard]] uint16_t get_status_code(const std::string& header) const;
   /**
    * @brief Get content length from HTTP header
    * @param header HTTP header string
    * @return uint16_t Content length, 0 if not found
    */
-  uint16_t get_content_len(const std::string& header) const;
+  [[nodiscard]] uint16_t get_content_len(const std::string& header) const;
   /**
    * @brief Read HTTP header and body from stream
    * @param func  Read function
@@ -67,7 +67,7 @@ class HttpClient : public IHttpClient {
    * @param buffer  Request buffe
    * @return  std::optional<HttpResponse> HTTP response if successful,
    */
-  std::optional<HttpResponse> https_req(HttpReqParams params,
+  std::optional<HttpResponse> https_req(const HttpReqParams& params,
                                         std::string_view buffer);
 
   /**
@@ -76,7 +76,7 @@ class HttpClient : public IHttpClient {
    * @return  std::optional<HttpReqParams> HTTP request parameters if
    * successful,
    */
-  std::optional<http::HttpReqParams> get_params_from_url(
+  [[nodiscard]] std::optional<http::HttpReqParams> get_params_from_url(
       std::string_view url) const;
 
   /**
@@ -84,14 +84,14 @@ class HttpClient : public IHttpClient {
    * @param p HTTP request parameters
    * @return std::string Cache key
    */
-  std::string get_cache_key(const HttpReqParams& p) const;
+  [[nodiscard]] std::string get_cache_key(const HttpReqParams& p) const;
 
   /**
    * @brief Determine if the response is a redirect
    * @param r  HTTP response
    * @return  true if redirect, false otherwise
    */
-  bool should_redirect(const HttpResponse& r) const;
+  [[nodiscard]] bool should_redirect(const HttpResponse& r) const;
 };
 
 }  // namespace http
