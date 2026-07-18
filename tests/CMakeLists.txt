@@ -1,5 +1,6 @@
 
 set(TEST_SOURCES
+    test_common.cpp
     test_file.cpp
     test_http_client.cpp
     test_url.cpp
