@@ -45,3 +45,4 @@ build/
 .cache
 Testing/Temporary
 build-release
+coverage.info
