@@ -7,6 +7,8 @@ jobs:
   build:
     name: Build on Ubuntu
     runs-on: ubuntu-latest
+    env:
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
     steps:
       - name: Checkout code
@@ -20,6 +22,13 @@ jobs:
             libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
             libssl-dev libfreetype-dev \
             autoconf autoconf-archive automake libtool
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -64,7 +73,7 @@ jobs:
 
       - name: Upload Coverage to Codecov
         run: |
-          lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent 
-          lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' '*/vcpkg_installed/*' '*/_deps/*' '*/tests/*'  --output-file coverage.info --ignore-errors unused
+          lcov --directory . --capture --output-file coverage.info --ignore-errors inconsistent
+          lcov --remove coverage.info '/usr/*' "${HOME}"'/.cache/*' '*/vcpkg_installed/*' '*/_deps/*' '*/tests/*' --output-file coverage.info --ignore-errors unused
           lcov --list coverage.info
-          bash <(curl -s https://codecov.io/bash) -f coverage.info -t || echo "Codecov did not collect coverage reports"
+          bash <(curl -s https://codecov.io/bash) -f coverage.info -t "e7c89a65-272f-4c0a-93a4-cb2f4b28554a" || echo "Codecov did not collect coverage reports"
