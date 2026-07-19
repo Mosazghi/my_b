@@ -1,7 +1,7 @@
 #include "HttpRequest.hpp"
 #include <format>
 
-namespace http {
+namespace my_b::http {
 
 std::string http_method_to_string(HttpMethod method) {
   switch (method) {
@@ -54,4 +54,4 @@ bool HttpResult::has_error() const {
   return !errors.empty() || response.status_line.status >= 400;
 }
 
-}  // namespace http
+}  // namespace my_b::http

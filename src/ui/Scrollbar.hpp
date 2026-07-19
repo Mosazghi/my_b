@@ -5,7 +5,7 @@
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Window/Event.hpp"
-namespace ui {
+namespace my_b::ui {
 
 struct ScrollState {
   int content_height{};
@@ -35,7 +35,8 @@ class ScrollBar : public Element {
   void mouse_scroll(const sf::Event& e);
 
  private:
-  [[nodiscard]] float get_scroll_pos_from_mouse(const sf::Vector2i& mouse_pos) const;
+  [[nodiscard]] float get_scroll_pos_from_mouse(
+      const sf::Vector2i& mouse_pos) const;
   void set_scroll_pos(float pos);
   sf::RectangleShape m_container;
   sf::RectangleShape m_thumb;
@@ -43,4 +44,4 @@ class ScrollBar : public Element {
   ScrollState m_state{};
 };
 
-}  // namespace ui
+}  // namespace my_b::ui

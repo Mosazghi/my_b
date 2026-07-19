@@ -1,5 +1,5 @@
 #pragma once
 
-namespace consts {
+namespace my_b::consts {
 inline constexpr auto WINDOW_WIDTH = 1200;
-}  // namespace consts
+}  // namespace my_b::consts

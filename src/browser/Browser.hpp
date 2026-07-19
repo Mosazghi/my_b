@@ -1,22 +1,25 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <common.hpp>
+#include <common/common.hpp>
 #include <functional>
 #include <initializer_list>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Window/Event.hpp"
+#include "http/HttpRequest.hpp"
 #include "logger.hpp"
+#include "resource-loader/ResourceLoader.hpp"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
-namespace browser {
+namespace my_b::browser {
 using EventCallback = std::function<void(const sf::Event&)>;
 class Browser {
  public:
   explicit Browser(sf::RenderWindow& window);
-  void load(url::URL& url);
-  ~Browser() = default;
+  void load(const url::URL& url);
+  ~Browser();
   void spin();
   void draw();
 
@@ -28,17 +31,24 @@ class Browser {
                          const EventCallback& cb);
   void dispatch_event(const sf::Event& event);
   void update_ui_elements();
+  /**
+   * @brief Perform the request for the URL
+   * @return std::optional<http::HttpResponse> HTTP response if successful,
+   * std::nullopt otherwise
+   */
+  http::HttpResult request(const url::URL& url);
 
-  sf::RenderWindow& m_window;
-  sf::Font m_font;
-  std::vector<layout::PositionTextPair> m_display_content;
-  std::vector<layout::Token> m_text_content;
   bool m_running{};
-
-  Logger& logger = Logger::getInstance();
-  ui::ScrollBar m_scroll_bar;
-
   std::unordered_map<sf::Event::EventType, std::vector<EventCallback>>
       m_event_callbacks;
+  std::vector<layout::PositionTextPair> m_display_content;
+  std::vector<layout::Token> m_text_content;
+  ui::ScrollBar m_scroll_bar;
+  sf::Font m_font;
+  std::shared_ptr<http::IHttpClient> m_http_client{};
+  std::unique_ptr<loader::ResourceLoader> m_loader;
+  sf::RenderWindow& m_window;
+
+  Logger& logger = Logger::getInstance();
 };
-}  // namespace browser
+}  // namespace my_b::browser

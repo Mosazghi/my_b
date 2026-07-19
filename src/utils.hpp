@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-namespace utils {
+namespace my_b::utils {
 /**
  * @brief Split a string by a delimiter
  * @param s String to split
@@ -26,4 +26,4 @@ void trim(std::string& s);
  */
 std::optional<std::string> ungzip(std::string_view compressed);
 
-}  // namespace utils
+}  // namespace my_b::utils

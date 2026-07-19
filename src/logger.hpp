@@ -7,6 +7,7 @@
 #include <source_location>
 #include <string_view>
 
+namespace my_b {
 enum class LogLevel : std::uint8_t { DBG, INFO, WARN, ERROR };
 static LogLevel log_level{LogLevel::DBG};
 
@@ -133,3 +134,4 @@ class Logger {
 
   std::mutex m_mutex;
 };
+}  // namespace my_b

@@ -5,10 +5,10 @@
 #include <vector>
 #include "layout/layout.hpp"
 
-namespace common {
+namespace my_b::common {
 
 std::vector<layout::Token> lex(std::string& body);
 bool isEmoji(sf::Uint32 codepoint);
 std::string get_emoji_id(sf::Uint32 codepoint);
 
-}  // namespace common
+}  // namespace my_b::common

@@ -1,13 +1,12 @@
 #include "layout.hpp"
 #include <fmt/base.h>
-#include <cmath>
-#include <iostream>
 #include <sstream>
-#include "common.hpp"
+#include "common/common.hpp"
 #include "logger.hpp"
 #include "resource-manager/ResourceManager.h"
+using namespace my_b;
 
-namespace layout {
+namespace my_b::layout {
 
 static void process_word(LayoutContext& ctx, const std::string& word);
 static void process_tag(LayoutContext& ctx, const std::string& tag);
@@ -206,4 +205,4 @@ std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
   flush_line(ctx);
   return ctx.display_content;
 }
-}  // namespace layout
+}  // namespace my_b::layout

@@ -7,8 +7,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-namespace utils {
+using namespace my_b;
+namespace my_b::utils {
 std::vector<std::string> split_string(const std::string& s, char delim) {
   if (s.empty()) {
     return {""};
@@ -77,4 +77,4 @@ std::optional<std::string> ungzip(std::string_view compressed) {
   return out;
 }
 
-}  // namespace utils
+}  // namespace my_b::utils

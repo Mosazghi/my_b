@@ -3,22 +3,31 @@
 #include <fmt/core.h>
 #include <openssl/evp.h>
 #include <SFML/Graphics.hpp>
+#include <memory>
 #include <utility>
 #include <vector>
 #include "SFML/Graphics/Sprite.hpp"
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/Graphics/View.hpp"
 #include "SFML/Window/Event.hpp"
+#include "http/HttpClient.hpp"
 #include "imgui-SFML.h"
 #include "imgui.h"
 #include "layout/layout.hpp"
+#include "resource-loader/ResourceLoader.hpp"
 #include "resource-manager/ResourceManager.h"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
-namespace browser {
+using namespace my_b;
+namespace my_b::browser {
 
 Browser::Browser(sf::RenderWindow& window)
-    : m_window{window}, m_running{true}, m_scroll_bar{window} {
+    : m_running{true},
+      m_scroll_bar{window},
+      m_http_client(std::make_shared<http::HttpClient>()),
+      m_loader(
+          std::make_unique<loader::ResourceLoader>(std::move(m_http_client))),
+      m_window{window} {
   if (!m_font.loadFromFile("assets/NotoSans-Regular.ttf")) {
     logger.err("Error loading font\n");
     return;
@@ -27,8 +36,10 @@ Browser::Browser(sf::RenderWindow& window)
   register_event_handlers();
 }
 
-void Browser::load(url::URL& url) {
-  auto resp = url.request();
+Browser::~Browser() = default;
+
+void Browser::load(const url::URL& url) {
+  auto resp = m_loader->load(url);
   m_text_content = common::lex(resp.response.body);
   m_display_content =
       layout::compute(m_text_content, m_font, m_window.getSize().x);
@@ -142,10 +153,6 @@ void Browser::draw() {
   ImGui::Text("Mouse pos: (%d, %d)", mouse_pos.x, mouse_pos.y);
   ImGui::End();
   ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-  // draw vertical line of the middle of window
-  // draw_list->AddLine(ImVec2(m_window.getSize().x / 2, 0),
-  //                    ImVec2(m_window.getSize().x / 2, m_window.getSize().y),
-  //                    IM_COL32(0, 0, 255, 255), 1.0f);
 #endif
   for (auto& [x, y, element, text] : m_display_content) {
     if (y > scroll_pos + m_window.getSize().y) {
@@ -160,31 +167,6 @@ void Browser::draw() {
       m_window.draw(text);
 #ifdef DEBUG
       const sf::FloatRect bounds = text.getGlobalBounds();
-      // auto front = std::get<3>(m_display_content.front());
-      // auto back = std::get<3>(m_display_content.back());
-      // auto line_width = back.getGlobalBounds().left +
-      //                   back.getGlobalBounds().width - front.getPosition().x;
-      // auto line_widht_middle = line_width / 2.0f + front.getPosition().x;
-      // // draw line width
-      // draw_list->AddLine(ImVec2(line_widht_middle, 0),
-      //                    ImVec2(line_widht_middle, m_window.getSize().y),
-      //                    IM_COL32(255, 100, 132, 255));
-      //
-      // draw_list->AddRect(
-      //     ImVec2(front.getPosition().x, front.getPosition().y),
-      //     ImVec2(back.getPosition().x + back.getGlobalBounds().width,
-      //            back.getPosition().y + back.getGlobalBounds().height),
-      //     IM_COL32(0, 255, 0, 255), 0.0f, 0, 1.5f);
-      //
-      // draw_list->AddLine(ImVec2(0, front.getPosition().y),
-      //                    ImVec2(front.getPosition().x,
-      //                    front.getPosition().y), IM_COL32(255, 0, 132, 255));
-      // draw_list->AddLine(
-      //     ImVec2(back.getGlobalBounds().left + back.getGlobalBounds().width,
-      //            back.getPosition().y),
-      //     ImVec2(m_window.getSize().x, back.getPosition().y),
-      //     IM_COL32(255, 0, 132, 255));
-      //
       if (bounds.contains(static_cast<sf::Vector2f>(mouse_pos))) {
         draw_list->AddRect(
             ImVec2(bounds.left, bounds.top),
@@ -230,4 +212,4 @@ void Browser::relayout_for_current_window_width() {
       layout::compute(m_text_content, m_font, m_window.getSize().x);
 }
 
-}  // namespace browser
+}  // namespace my_b::browser

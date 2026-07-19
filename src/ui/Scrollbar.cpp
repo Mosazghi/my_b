@@ -5,7 +5,8 @@
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Window/Mouse.hpp"
 
-namespace ui {
+using namespace my_b;
+namespace my_b::ui {
 ScrollBar::ScrollBar(sf::RenderWindow& window) : m_window{window} {}
 
 void ScrollBar::update(int content_height, int viewport_height) {
@@ -124,4 +125,4 @@ void ScrollBar::mouse_scroll(const sf::Event& event) {
   }
 }
 
-}  // namespace ui
+}  // namespace my_b::ui

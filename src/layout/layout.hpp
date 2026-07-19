@@ -9,7 +9,7 @@
 #include <vector>
 #include "SFML/Graphics/Text.hpp"
 #include "SFML/System/String.hpp"
-namespace layout {
+namespace my_b::layout {
 
 inline constexpr auto HSTEP{13};
 inline constexpr auto VSTEP{15};
@@ -68,4 +68,4 @@ struct LayoutContext {
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
                                       sf::Font& font, int window_width);
-};  // namespace layout
+};  // namespace my_b::layout

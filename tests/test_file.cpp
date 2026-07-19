@@ -3,6 +3,7 @@
 #include "file/File.hpp"
 #include "test_helpers.hpp"
 
+using namespace my_b;
 TEST(FileTest, ReadValidFiles) {
   std::string file_path = get_mock_data_file_path("short-file.txt");
 

@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <cassert>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -7,6 +8,7 @@
 #include "http/HttpClient.hpp"
 #include "imgui-SFML.h"
 #include "url/Url.hpp"
+using namespace my_b;
 
 static Logger& logger = Logger::getInstance();
 
@@ -48,7 +50,7 @@ int main(int argc, char** argv) {
   }
 
   auto browser = std::make_unique<browser::Browser>(window);
-  auto url = url::URL(url_addr, std::make_shared<http::HttpClient>());
+  auto url = url::URL(url_addr);
   browser->load(url);
   browser->spin();
 
