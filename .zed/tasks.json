@@ -1,50 +1,50 @@
 [
-    {
-        "label": "Compile",
-        "command": "./build.sh",
-        "use_new_terminal": false
-    },
+  {
+    "label": "Compile",
+    "command": "./build.sh",
+    "use_new_terminal": false
+  },
 
-    {
-        "label": "Build (debug)",
-        "command": "cmake --build build --target my_b",
-        "use_new_terminal": false
-    },
-    {
-        "label": "configure (release)",
-  "command": "cmake --preset=default -DCMAKE_BUILD_TYPE=Release -B build-release",
-        "use_new_terminal": false
-    },
-    {
-        "label": "Build (release)",
-        "command": "cmake --build build-release --target my_b",
-        "use_new_terminal": false
-    },
+  {
+    "label": "Build (debug)",
+    "command": "cmake --build build --target my_b",
+    "use_new_terminal": false
+  },
+  {
+    "label": "configure (release)",
+    "command": "cmake --preset=default -DCMAKE_BUILD_TYPE=Release -B build-release",
+    "use_new_terminal": false
+  },
+  {
+    "label": "Build (release)",
+    "command": "cmake --build build-release --target my_b",
+    "use_new_terminal": false
+  },
 
-    {
-        "label": "Run assets index.html",
-        "command": "./build/my_b -u file://$(pwd)/assets/index.html",
-        "use_new_terminal": false
-    },
+  {
+    "label": "Run assets index.html",
+    "command": "./build/my_b -u file://$(pwd)/assets/index.html",
+    "use_new_terminal": false
+  },
 
-    {
-        "label": "GTest: Build",
-        "command": "make build-tests",
-        "description": "Compiles the project", 
-        "allow_concurrent_runs": false,
-        "use_new_terminal": false
-    },
-    {
-        "label": "GTest: Build & Run All",
-        "command": "mkdir -p build && make build-tests && ./build/tests/tests",
-        "description": "Compiles the project and runs ALL tests", 
-        "allow_concurrent_runs": false,
-        "use_new_terminal": false
-    },
-    {
-        "label": "GTest: Run Current File Only",
-        "command": "./build/tests/tests -- --gtest_filter=\"*${ZED_STEM}*\"",
-        "description": "Runs tests matching the current open file name",
-        "allow_concurrent_runs": false
-    }
+  {
+    "label": "GTest: Build",
+    "command": "make build-tests",
+    "description": "Compiles the project",
+    "allow_concurrent_runs": false,
+    "use_new_terminal": false
+  },
+  {
+    "label": "GTest: Build & Run All",
+    "command": "mkdir -p build && make build-tests && ./build/tests/tests",
+    "description": "Compiles the project and runs ALL tests",
+    "allow_concurrent_runs": false,
+    "use_new_terminal": false
+  },
+  {
+    "label": "GTest: Run Current File Only",
+    "command": "./build/tests/tests -- --gtest_filter=\"*${ZED_STEM}*\"",
+    "description": "Runs tests matching the current open file name",
+    "allow_concurrent_runs": false
+  }
 ]
