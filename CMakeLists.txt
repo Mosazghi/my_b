@@ -44,6 +44,9 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
 endif()
 
+
+
+
 set(SOURCES
     src/browser/Browser.cpp
     src/file/File.cpp
@@ -60,10 +63,14 @@ set(SOURCES
 add_library(my_b_lib OBJECT ${SOURCES})
 target_include_directories(my_b_lib PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic)
+if(ENABLE_COVERAGE)
+    target_compile_options(my_b_lib PRIVATE --coverage -O0 -g)
+    target_link_options(my_b_lib PRIVATE --coverage)
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Debug ON")
-    target_compile_definitions(my_b_lib PRIVATE DEBUG=1)
+    target_compile_definitions(my_b_lib PRIVATE DEBUG)
 else()
     message(STATUS "Debug off")
 endif()

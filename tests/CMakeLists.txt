@@ -1,4 +1,3 @@
-
 set(TEST_SOURCES
     test_common.cpp
     test_file.cpp
@@ -8,6 +7,12 @@ set(TEST_SOURCES
     test_utilites.cpp
 )
 add_executable(tests ${TEST_SOURCES})
+if(ENABLE_COVERAGE)
+    target_compile_options(tests PRIVATE --coverage -O0 -g)
+    target_link_options(tests PRIVATE --coverage)
+endif()
+
+
 
 target_compile_definitions(tests PRIVATE
     TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}"

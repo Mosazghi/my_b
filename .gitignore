@@ -44,3 +44,4 @@ out/
 build/
 .cache
 Testing/Temporary
+build-release
