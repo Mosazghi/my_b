@@ -53,10 +53,16 @@ jobs:
           cmake --preset=default \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DENABLE_COVERAGE=ON
 
       - name: Build
         run: cmake --build build --target tests -- -j "$(nproc)"
 
-      - name: Test
-        run: ./build/tests/tests
+      - name: Run test
+        run: ctest --test-dir build --output-on-failure -j$(nproc)
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
