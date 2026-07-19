@@ -8,10 +8,6 @@
         "request": "launch",
         "adapter": "CodeLLDB",
         "program": "./build/my_b",
-        "cwd": "/workspace",
-        "args": [
-            "--url",
-            "https://browser.engineering/examples/example3-sizes.html"
-        ]
+        "args": ["--url", "file://./assets/index.html"]
     }
 ]

@@ -6,8 +6,18 @@
     },
 
     {
-        "label": "Build",
+        "label": "Build (debug)",
         "command": "cmake --build build --target my_b",
+        "use_new_terminal": false
+    },
+    {
+        "label": "configure (release)",
+  "command": "cmake --preset=default -DCMAKE_BUILD_TYPE=Release -B build-release",
+        "use_new_terminal": false
+    },
+    {
+        "label": "Build (release)",
+        "command": "cmake --build build-release --target my_b",
         "use_new_terminal": false
     },
 
