@@ -48,8 +48,11 @@ class Logger {
 
   template <typename... Args>
   void dbg(LogFormat format, Args&&... args) {
-#if defined(DEBUG) || defined(_DEBUG)
+#if defined(DEBUG)
     log(LogLevel::DBG, format, std::forward<Args>(args)...);
+#else
+    do {
+    } while (0);
 #endif
   }
 

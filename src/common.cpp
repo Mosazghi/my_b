@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <fmt/base.h>
 #include <openssl/evp.h>
 #include <unicode/uchar.h>
 #include <unicode/urename.h>
@@ -8,10 +9,66 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+#include <stack>
+#include <string>
+#include <unordered_set>
 #include <vector>
 #include "utils.hpp"
 
 namespace common {
+
+#ifdef DEBUG
+void print_token_tree(const std::vector<layout::Token>& tokens) {
+  using namespace layout;
+
+  // Tags that never get a matching closing tag (self-closing/void elements)
+  static const std::unordered_set<std::string> void_tags = {
+      "!doctype", "meta", "br", "br/", "img", "hr", "link", "input"};
+
+  int depth = 0;
+
+  auto indent = [&]() {
+    for (int i = 0; i < depth; ++i) std::cout << "  ";
+  };
+
+  for (const auto& token : tokens) {
+    std::visit(
+        [&](const auto& t) {
+          using T = std::decay_t<decltype(t)>;
+
+          if constexpr (std::is_same_v<T, Text>) {
+            indent();
+            std::cout << "\"" << t.text << "\"\n";
+
+          } else if constexpr (std::is_same_v<T, Tag>) {
+            const bool is_closing = !t.tag.empty() && t.tag[0] == '/';
+            const bool is_self_closing =
+                !t.rest.empty() && t.rest.back() == '/';
+
+            if (is_closing) {
+              depth = std::max(0, depth - 1);
+              indent();
+              std::cout << "</" << t.tag.substr(1) << ">\n";
+            } else {
+              indent();
+              std::cout << "<" << t.tag << ">"
+                        << "> (parent=" << t.parent_tag << ")"
+                        << (t.rest.empty() ? "" : "  attrs=\"" + t.rest + "\"")
+                        << "\n";
+
+              const bool is_void =
+                  void_tags.count(t.tag) > 0 || is_self_closing;
+              if (!is_void) {
+                ++depth;
+              }
+            }
+          }
+        },
+        token);
+  }
+}
+
+#endif
 
 std::vector<layout::Token> lex(std::string& body) {
   bool in_tag{};
@@ -22,6 +79,18 @@ std::vector<layout::Token> lex(std::string& body) {
 
   body = std::regex_replace(body, std::regex("&lt;"), "<");
   body = std::regex_replace(body, std::regex("&gt;"), ">");
+
+  std::vector<std::string> tag_stack{};
+  static const std::unordered_set<std::string> void_tags = {
+
+      "!doctype", "meta", "br", "br/", "img", "hr", "link", "input"};
+
+  const auto current_parent = [&]() -> std::string {
+    if (tag_stack.empty()) {
+      return "";
+    }
+    return tag_stack.back();
+  };
 
   for (const auto& c : body) {
     if (c == '<') {
@@ -43,8 +112,23 @@ std::vector<layout::Token> lex(std::string& body) {
       } else {
         buffer = std::regex_replace(buffer, std::regex("\\s+"), "");
       }
+      const bool is_closing = !buffer.empty() && buffer[0] == '/';
+      const bool is_doctype = !buffer.empty() && buffer[0] == '!';
+      const bool is_self_closing = !rest.empty() && rest.back() == '/';
+      const bool is_void =
+          void_tags.count(buffer) > 0 || is_self_closing || is_doctype;
 
-      result.emplace_back(Tag(buffer, rest));
+      const std::string parent = current_parent();
+      result.emplace_back(Tag(buffer, rest, parent));
+      if (is_closing) {
+        if (!tag_stack.empty()) {
+          tag_stack.pop_back();
+        }
+      } else {
+        if (!is_void) {
+          tag_stack.push_back(buffer);
+        }
+      }
       buffer.clear();
     } else {
       buffer += c;
@@ -54,6 +138,10 @@ std::vector<layout::Token> lex(std::string& body) {
     utils::trim(buffer);
     result.emplace_back(Text(buffer));
   }
+
+#ifdef DEBUG
+  print_token_tree(result);
+#endif
   return result;
 }
 

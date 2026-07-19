@@ -15,7 +15,6 @@
 #include "resource-manager/ResourceManager.h"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
-#define _DEBUG
 namespace browser {
 
 Browser::Browser(sf::RenderWindow& window)
@@ -100,13 +99,13 @@ void Browser::spin() {
   while (m_running && m_window.isOpen()) {
     sf::Event event;
     while (m_window.pollEvent(event)) {
-#ifdef _DEBUG
+#ifdef DEBUG
       ImGui::SFML::ProcessEvent(m_window, event);
 #endif
       dispatch_event(event);
     }
 
-#ifdef _DEBUG
+#ifdef DEBUG
     auto dt = deltaClock.restart();
     ImGui::SFML::Update(m_window, dt);
     frameCount++;
@@ -123,7 +122,7 @@ void Browser::spin() {
     m_window.clear(sf::Color::White);
     update_ui_elements();
     draw();
-#ifdef _DEBUG
+#ifdef DEBUG
     ImGui::SFML::Render(m_window);
 #endif
     m_window.display();
@@ -134,7 +133,7 @@ void Browser::spin() {
 void Browser::draw() {
   const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
 
-#ifdef _DEBUG
+#ifdef DEBUG
   const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
   ImGui::Begin("Debug Info");
   ImGui::Text("Window size: %d x %d", m_window.getSize().x,
@@ -159,7 +158,7 @@ void Browser::draw() {
     if (element.type == layout::LayoutElementType::Text) {
       text.setPosition(x, y - scroll_pos);
       m_window.draw(text);
-#ifdef _DEBUG
+#ifdef DEBUG
       const sf::FloatRect bounds = text.getGlobalBounds();
       // auto front = std::get<3>(m_display_content.front());
       // auto back = std::get<3>(m_display_content.back());

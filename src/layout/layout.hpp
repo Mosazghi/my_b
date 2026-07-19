@@ -35,8 +35,9 @@ struct Text {
 struct Tag {
   std::string tag{};
   std::string rest{};
-  explicit Tag(std::string t, std::string r)
-      : tag(std::move(t)), rest(std::move(r)) {}
+  std::string parent_tag{};
+  explicit Tag(std::string t, std::string r, std::string p)
+      : tag(std::move(t)), rest(std::move(r)), parent_tag(std::move(p)) {}
 };
 struct LayoutElement {
   LayoutElementType type{};
@@ -46,10 +47,10 @@ struct LayoutElement {
 };
 
 using Token = std::variant<Text, Tag>;
-using X = double;
-using Y = double;
-using PositionTextPair = std::tuple<X, Y, LayoutElement, sf::Text>;
-using LineElement = std::tuple<X, LayoutElement, sf::Text>;
+using X_POS = double;
+using Y_POS = double;
+using PositionTextPair = std::tuple<X_POS, Y_POS, LayoutElement, sf::Text>;
+using LineElement = std::tuple<X_POS, LayoutElement, sf::Text>;
 
 struct LayoutContext {
   int size{TextSize::Normal};

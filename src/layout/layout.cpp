@@ -26,6 +26,9 @@ static void process_token(LayoutContext& ctx, const Token& token) {
     }
   } else {
     auto& tag_token = std::get<Tag>(token);
+    if (tag_token.parent_tag == "head") {
+      return;  // Skip processing tags inside the <head> section
+    }
     ctx.current_tag = &tag_token;
     process_tag(ctx, tag_token.tag);
   }
