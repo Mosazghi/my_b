@@ -21,7 +21,7 @@ jobs:
             ccache cmake ninja-build pkg-config \
             libgl1-mesa-dev libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
             libssl-dev libfreetype-dev \
-            autoconf autoconf-archive automake libtool
+            autoconf autoconf-archive automake libtool lcov
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v7
