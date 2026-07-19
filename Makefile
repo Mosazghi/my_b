@@ -4,9 +4,9 @@ run:
 build:
 	./build.sh
 build-tests:
-	cmake --build build --target tests -- -j "$(nproc)"
+	cmake --build build --target tests -- -j "$$(nproc)"
 test:
-	ctest --test-dir build --output-on-failure
+	ctest --test-dir build --output-on-failure -j "$$(nproc)"
 clean:
 	rm -rf build
 format:
