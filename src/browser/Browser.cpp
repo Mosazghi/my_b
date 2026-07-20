@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 #include <openssl/evp.h>
 #include <SFML/Graphics.hpp>
+#include <SFML/Window/Mouse.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -23,7 +24,6 @@ namespace my_b::browser {
 
 Browser::Browser(sf::RenderWindow& window)
     : m_running{true},
-      m_scroll_bar{window},
       m_http_client(std::make_shared<http::HttpClient>()),
       m_loader(
           std::make_unique<loader::ResourceLoader>(std::move(m_http_client))),
@@ -64,19 +64,24 @@ void Browser::register_event_handlers() {
     relayout_for_current_window_width();
   });
 
-  register_callback(sf::Event::EventType::MouseWheelScrolled,
-                    [&](const sf::Event& e) { m_scroll_bar.mouse_scroll(e); });
+  register_callback(
+      sf::Event::EventType::MouseWheelScrolled, [&](const sf::Event& e) {
+        m_scroll_bar.mouse_scroll(e, sf::Mouse::getPosition(m_window));
+      });
   register_callback(
       {
           sf::Event::EventType::MouseMoved,
           sf::Event::EventType::MouseButtonPressed,
           sf::Event::EventType::MouseButtonReleased,
       },
-      [&](const sf::Event& e) { m_scroll_bar.mouse_hold_scroll(e); });
+      [&](const sf::Event& e) {
+        m_scroll_bar.mouse_hold_scroll(e, sf::Mouse::getPosition(m_window));
+      });
 
   register_callback(
-      sf::Event::EventType::MouseButtonPressed,
-      [&](const sf::Event& e) { m_scroll_bar.mouse_click_scroll(e); });
+      sf::Event::EventType::MouseButtonPressed, [&](const sf::Event& e) {
+        m_scroll_bar.mouse_click_scroll(e, sf::Mouse::getPosition(m_window));
+      });
 }
 
 void Browser::register_callback(sf::Event::EventType event,
@@ -197,13 +202,14 @@ void Browser::draw() {
     }
   }
 
-  m_scroll_bar.draw();
+  m_window.draw(m_scroll_bar);
 }
 
 void Browser::update_ui_elements() {
   if (!m_display_content.empty()) {
     m_scroll_bar.update(std::get<1>(m_display_content.back()),
-                        static_cast<int>(m_window.getSize().y));
+                        static_cast<int>(m_window.getSize().y),
+                        sf::Mouse::getPosition(m_window), m_window.getSize());
   }
 }
 

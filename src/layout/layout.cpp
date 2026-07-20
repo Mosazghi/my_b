@@ -25,15 +25,15 @@ static void process_token(LayoutContext& ctx, const Token& token) {
     }
   } else {
     auto& tag_token = std::get<Tag>(token);
-    if (tag_token.parent_tag == "head") {
-      return;  // Skip processing tags inside the <head> section
-    }
     ctx.current_tag = &tag_token;
     process_tag(ctx, tag_token.tag);
   }
 }
 
 static void process_word(LayoutContext& ctx, const std::string& word) {
+  if (ctx.current_tag && ctx.current_tag->parent_tag == "head") {
+    return;
+  }
   const bool has_bold = ctx.weight == "bold";
   const float space_width = ctx.font.getGlyph(' ', ctx.size, has_bold).advance;
 

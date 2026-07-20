@@ -43,7 +43,7 @@ class Browser {
       m_event_callbacks;
   std::vector<layout::PositionTextPair> m_display_content;
   std::vector<layout::Token> m_text_content;
-  ui::ScrollBar m_scroll_bar;
+  ui::ScrollBar m_scroll_bar{};
   sf::Font m_font;
   std::shared_ptr<http::IHttpClient> m_http_client{};
   std::unique_ptr<loader::ResourceLoader> m_loader;

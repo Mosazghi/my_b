@@ -16,10 +16,10 @@ inline constexpr auto VSTEP{15};
 
 namespace TextSize {
 enum : std::uint8_t {
-  Large = 16,
-  Medium = 14,
-  Normal = 11,
-  Small = 9,
+  Large = 18,
+  Medium = Large - 2,
+  Normal = Medium - 2,
+  Small = Normal - 2,
   Super = Medium / 2
 };
 };

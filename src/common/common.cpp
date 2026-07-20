@@ -138,9 +138,9 @@ std::vector<layout::Token> lex(std::string& body) {
     result.emplace_back(Text(buffer));
   }
 
-#ifdef DEBUG
-  print_token_tree(result);
-#endif
+  // #ifdef DEBUG
+  //   print_token_tree(result);
+  // #endif
   return result;
 }
 
