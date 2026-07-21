@@ -14,6 +14,9 @@ find_package(GTest CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(magic_enum CONFIG REQUIRED)
 
+
+add_subdirectory(src/ui)
+
 FetchContent_Declare(
      imgui
      GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -56,28 +59,27 @@ set(SOURCES
     src/layout/layout.cpp
     src/resource-manager/ResourceManager.cpp
     src/resource-loader/ResourceLoader.cpp
-    src/ui/Scrollbar.cpp
     src/url/Url.cpp
     src/common/common.cpp
     src/utils.cpp
 )
 
-add_library(my_b_lib OBJECT ${SOURCES})
-target_include_directories(my_b_lib PUBLIC ${PROJECT_SOURCE_DIR}/src)
-target_compile_options(my_b_lib PRIVATE -Wall -Wextra -Wpedantic)
+add_library(MyBLib OBJECT ${SOURCES})
+target_include_directories(MyBLib PUBLIC ${PROJECT_SOURCE_DIR}/src)
+target_compile_options(MyBLib PRIVATE -Wall -Wextra -Wpedantic)
 if(ENABLE_COVERAGE)
-  target_compile_options(my_b_lib PRIVATE --coverage -O0 -g)
-  target_link_options(my_b_lib PRIVATE --coverage)
+  target_compile_options(MyBLib PRIVATE --coverage -O0 -g)
+  target_link_options(MyBLib PRIVATE --coverage)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Debug ON")
-  target_compile_definitions(my_b_lib PRIVATE DEBUG)
+  target_compile_definitions(MyBLib PRIVATE DEBUG)
 else()
   message(STATUS "Debug off")
 endif()
 
-target_link_libraries(my_b_lib
+target_link_libraries(MyBLib
     PRIVATE
         OpenSSL::SSL OpenSSL::Crypto
         ZLIB::ZLIB
@@ -89,13 +91,13 @@ target_link_libraries(my_b_lib
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME}
         PRIVATE
-        my_b_lib
+        MyBLib
+        MyBUI
         ImGui-SFML::ImGui-SFML
         fmt::fmt
 )
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
-# Tests live in their own directory
 include(CTest)
 enable_testing()
 add_subdirectory(tests)

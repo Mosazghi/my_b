@@ -7,6 +7,7 @@
 #include <cstdint>
 #include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Window/Event.hpp"
+#include "UiElement.hpp"
 
 namespace my_b::ui {
 
@@ -22,7 +23,7 @@ struct ScrollState {
 
 enum class ScrollDirection : std::uint8_t { UP, DOWN };
 
-class ScrollBar : public sf::Drawable, public sf::Transformable {
+class ScrollBar : public UiElement {
   static constexpr float SCROLL_BAR_WIDTH{20.f};
 
  public:
@@ -31,19 +32,22 @@ class ScrollBar : public sf::Drawable, public sf::Transformable {
 
   void update(int content_height, int viewport_height,
               const sf::Vector2i& mouse_pos, const sf::Vector2u& windowSize);
+  void handle_event(const sf::Event& event, sf::RenderWindow& window) override;
+
+  std::string get_name() const override { return "ScrollBar"; }
+  void set_heights(int content_height, int viewport_height);
 
   [[nodiscard]] int get_current_roll_pos() const { return m_state.scroll_pos; }
   [[nodiscard]] float get_width() const { return SCROLL_BAR_WIDTH; }
 
+ private:
   void mouse_click_scroll(const sf::Event& e, const sf::Vector2i& mouse_pos);
   void mouse_hold_scroll(const sf::Event& e, const sf::Vector2i& mouse_pos);
-  void mouse_scroll(const sf::Event& e, const sf::Vector2i& mouse_pos);
-
- private:
+  void mouse_scroll(const sf::Event& e);
   void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
   [[nodiscard]] float get_scroll_pos_from_mouse(
       const sf::Vector2f& mouse_pos) const;
-  void set_scroll_pos(float pos, const sf::Vector2i& mouse_pos);
+  void set_scroll_pos(float pos);
 
   void update_geometry(const sf::Vector2i& mouse_pos,
                        const sf::Vector2u& windowSize);

@@ -6,12 +6,26 @@
 using namespace my_b;
 namespace my_b::ui {
 
-void ScrollBar::update(int content_height, int viewport_height,
-                       const sf::Vector2i& mouse_pos,
-                       const sf::Vector2u& windowSize) {
-  m_state.content_height = content_height;
-  m_state.viewport_height = viewport_height;
-  update_geometry(mouse_pos, windowSize);
+void ScrollBar::handle_event(const sf::Event& event, sf::RenderWindow& window) {
+  const auto mouse_pos = sf::Mouse::getPosition(window);
+
+  switch (event.type) {
+    case sf::Event::EventType::MouseWheelScrolled:
+      mouse_scroll(event);
+      break;
+    case sf::Event::EventType::MouseMoved:
+    case sf::Event::EventType::MouseButtonReleased:
+      mouse_hold_scroll(event, mouse_pos);
+      break;
+    case sf::Event::EventType::MouseButtonPressed:
+      mouse_hold_scroll(event, mouse_pos);
+      mouse_click_scroll(event, mouse_pos);
+      break;
+    default:
+      break;
+  }
+
+  update_geometry(mouse_pos, window.getSize());
 }
 
 void ScrollBar::update_geometry(const sf::Vector2i& mouse_pos,
@@ -71,16 +85,19 @@ void ScrollBar::draw(sf::RenderTarget& target, sf::RenderStates states) const {
   target.draw(m_thumb, states);
 }
 
+void ScrollBar::set_heights(int content_height, int viewport_height) {
+  m_state.content_height = content_height;
+  m_state.viewport_height = viewport_height;
+}
+
 void ScrollBar::mouse_click_scroll(const sf::Event& /*event*/,
                                    const sf::Vector2i& mouse_pos) {
-  if (!m_container.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y) ||
-      m_thumb.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y)) {
+  if (!m_state.is_hovering_container || m_state.is_hovering_thumb) {
     return;
   }
 
   set_scroll_pos(
-      get_scroll_pos_from_mouse(static_cast<sf::Vector2f>(mouse_pos)),
-      mouse_pos);
+      get_scroll_pos_from_mouse(static_cast<sf::Vector2f>(mouse_pos)));
 }
 
 void ScrollBar::mouse_hold_scroll(const sf::Event& event,
@@ -89,7 +106,7 @@ void ScrollBar::mouse_hold_scroll(const sf::Event& event,
 
   if (event.type == sf::Event::MouseButtonPressed &&
       event.mouseButton.button == sf::Mouse::Left &&
-      m_thumb.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y)) {
+      m_state.is_hovering_thumb) {
     is_scrolling = true;
   } else if (event.type == sf::Event::MouseButtonReleased &&
              event.mouseButton.button == sf::Mouse::Left) {
@@ -98,15 +115,13 @@ void ScrollBar::mouse_hold_scroll(const sf::Event& event,
 
   if (is_scrolling) {
     set_scroll_pos(
-        get_scroll_pos_from_mouse(static_cast<sf::Vector2f>(mouse_pos)),
-        mouse_pos);
+        get_scroll_pos_from_mouse(static_cast<sf::Vector2f>(mouse_pos)));
   }
 }
 
-void ScrollBar::set_scroll_pos(float pos, const sf::Vector2i& mouse_pos) {
+void ScrollBar::set_scroll_pos(float pos) {
   m_state.scroll_pos = pos;
   m_state.last_scroll_time = std::chrono::steady_clock::now();
-  // update_geometry(mouse_pos, m_window.getSize());
 }
 
 float ScrollBar::get_scroll_pos_from_mouse(
@@ -124,8 +139,7 @@ float ScrollBar::get_scroll_pos_from_mouse(
   return t * max_scroll;
 }
 
-void ScrollBar::mouse_scroll(const sf::Event& event,
-                             const sf::Vector2i& mouse_pos) {
+void ScrollBar::mouse_scroll(const sf::Event& event) {
   constexpr int scroll_step = 100;
   ScrollDirection direction = event.mouseWheelScroll.delta > 0
                                   ? ScrollDirection::UP
@@ -133,8 +147,7 @@ void ScrollBar::mouse_scroll(const sf::Event& event,
 
   const auto scroll_pos = m_state.scroll_pos;
   if (direction == ScrollDirection::UP) {
-    set_scroll_pos(std::max(0.f, static_cast<float>(scroll_pos - scroll_step)),
-                   mouse_pos);
+    set_scroll_pos(std::max(0.f, static_cast<float>(scroll_pos - scroll_step)));
   } else {
     int max_scroll =
         std::max(0, m_state.content_height - m_state.viewport_height);
@@ -142,8 +155,7 @@ void ScrollBar::mouse_scroll(const sf::Event& event,
       return;
     }
     set_scroll_pos(std::min(static_cast<float>(max_scroll),
-                            static_cast<float>(scroll_pos + scroll_step)),
-                   mouse_pos);
+                            static_cast<float>(scroll_pos + scroll_step)));
   }
 }
 

@@ -17,6 +17,7 @@
 #include "layout/layout.hpp"
 #include "resource-loader/ResourceLoader.hpp"
 #include "resource-manager/ResourceManager.h"
+#include "ui/Button.hpp"
 #include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
 using namespace my_b;
@@ -27,11 +28,20 @@ Browser::Browser(sf::RenderWindow& window)
       m_http_client(std::make_shared<http::HttpClient>()),
       m_loader(
           std::make_unique<loader::ResourceLoader>(std::move(m_http_client))),
-      m_window{window} {
+      m_window{window},
+      m_ui_manager{m_window} {
   if (!m_font.loadFromFile("assets/NotoSans-Regular.ttf")) {
     logger.err("Error loading font\n");
     return;
   }
+
+  m_top_scrollbar = m_ui_manager.create_element<ui::ScrollBar>();
+  auto button = m_ui_manager.create_element<ui::Button>(
+      sf::Vector2f{100, 100}, sf::Vector2f{200, 50}, "Test Button", m_font);
+  button->set_on_click([&]() { fmt::println("Clicked"); });
+  button->set_normal_color(sf::Color::Green);
+  button->set_text_color(sf::Color::Red);
+  button->set_text_size(20);
 
   register_event_handlers();
 }
@@ -63,25 +73,6 @@ void Browser::register_event_handlers() {
     m_window.setView(sf::View(visibleArea));
     relayout_for_current_window_width();
   });
-
-  register_callback(
-      sf::Event::EventType::MouseWheelScrolled, [&](const sf::Event& e) {
-        m_scroll_bar.mouse_scroll(e, sf::Mouse::getPosition(m_window));
-      });
-  register_callback(
-      {
-          sf::Event::EventType::MouseMoved,
-          sf::Event::EventType::MouseButtonPressed,
-          sf::Event::EventType::MouseButtonReleased,
-      },
-      [&](const sf::Event& e) {
-        m_scroll_bar.mouse_hold_scroll(e, sf::Mouse::getPosition(m_window));
-      });
-
-  register_callback(
-      sf::Event::EventType::MouseButtonPressed, [&](const sf::Event& e) {
-        m_scroll_bar.mouse_click_scroll(e, sf::Mouse::getPosition(m_window));
-      });
 }
 
 void Browser::register_callback(sf::Event::EventType event,
@@ -136,6 +127,7 @@ void Browser::spin() {
     ImGui::End();
 #endif
     m_window.clear(sf::Color::White);
+    m_ui_manager.update(event);
     update_ui_elements();
     draw();
 #ifdef DEBUG
@@ -147,7 +139,10 @@ void Browser::spin() {
 }
 
 void Browser::draw() {
-  const auto scroll_pos = m_scroll_bar.get_current_roll_pos();
+  static int scroll_pos = 0;
+  if (m_top_scrollbar) {
+    scroll_pos = m_top_scrollbar->get_current_roll_pos();
+  }
 
 #ifdef DEBUG
   const sf::Vector2i mouse_pos = sf::Mouse::getPosition(m_window);
@@ -202,14 +197,13 @@ void Browser::draw() {
     }
   }
 
-  m_window.draw(m_scroll_bar);
+  m_ui_manager.draw(scroll_pos);
 }
 
 void Browser::update_ui_elements() {
   if (!m_display_content.empty()) {
-    m_scroll_bar.update(std::get<1>(m_display_content.back()),
-                        static_cast<int>(m_window.getSize().y),
-                        sf::Mouse::getPosition(m_window), m_window.getSize());
+    m_top_scrollbar->set_heights(std::get<1>(m_display_content.back()),
+                                 static_cast<int>(m_window.getSize().y));
   }
 }
 

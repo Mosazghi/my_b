@@ -8,8 +8,8 @@ set(TEST_SOURCES
 )
 add_executable(tests ${TEST_SOURCES})
 if(ENABLE_COVERAGE)
-    target_compile_options(tests PRIVATE --coverage -O0 -g)
-    target_link_options(tests PRIVATE --coverage)
+  target_compile_options(tests PRIVATE --coverage -O0 -g)
+  target_link_options(tests PRIVATE --coverage)
 endif()
 
 
@@ -20,7 +20,7 @@ target_compile_definitions(tests PRIVATE
 
 target_link_libraries(tests
     PRIVATE
-        my_b_lib
+        MyBLib
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
