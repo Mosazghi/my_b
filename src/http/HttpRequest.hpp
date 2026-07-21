@@ -2,9 +2,9 @@
 #include <chrono>
 #include <string>
 #include <unordered_map>
-#include "url/Types.hpp"
+#include "url/Url.hpp"
 
-namespace http {
+namespace my_b::http {
 using Headers = std::unordered_map<std::string, std::string>;
 
 enum class HttpMethod : std::uint8_t { GET, POST, PUT, DELETE };
@@ -69,4 +69,4 @@ struct HttpRespCache {
   uint32_t max_age;
 };
 
-}  // namespace http
+}  // namespace my_b::http

@@ -4,8 +4,9 @@
 #include <optional>
 #include <string>
 #include "logger.hpp"
+using namespace my_b;
 
-namespace file {
+namespace my_b::file {
 
 static Logger& logger = Logger::getInstance();
 
@@ -31,4 +32,4 @@ std::optional<std::string> read(const std::string& path) {
   return buffer;
 }
 
-}  // namespace file
+}  // namespace my_b::file

@@ -5,6 +5,8 @@
 #include "test_helpers.hpp"
 #include "utils.hpp"
 
+using namespace my_b;
+
 TEST(Utils, SplitString) {
   auto str1 = "hello,world";
   auto splitted = utils::split_string(str1, ',');

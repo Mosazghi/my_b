@@ -1,40 +1,32 @@
 #pragma once
-#include <memory>
 #include <string>
-#include "IUrl.hpp"
-#include "http/HttpRequest.hpp"
-#include "http/IHttpClient.hpp"
 #include "logger.hpp"
 
-namespace url {
+namespace my_b::url {
 
-class URL : public IUrl {
- public:
-  URL(std::string_view url, std::shared_ptr<http::IHttpClient> http_client);
-  ~URL() override;
-  /**
-   * @brief Perform the request for the URL
-   * @return std::optional<http::HttpResponse> HTTP response if successful,
-   * std::nullopt otherwise
-   */
-  http::HttpResult request() override;
+enum class Scheme : std::uint8_t {
+  UNKNOWN,  //< Unsupported.
+  HTTP,
+  HTTPS,
+  FILE,
+  DATA,
+  VIEW_SOURCE
+};
 
- public:
-  struct Data {
-    Scheme scheme{Scheme::UNKNOWN};
-    std::string host;
-    std::optional<int> port;
-    std::string path;
-    // TODO: Refactor
-    struct DataScheme {
-      std::string protocol;
-      std::string data;
-    } data_scheme;
-  } m_data;
+struct URL {
+  URL(std::string_view url);
+  ~URL();
 
-  Logger& logger = Logger::getInstance();
-  std::shared_ptr<http::IHttpClient> m_http_client;
-  std::string m_url{};
+  std::string url{};
+  std::string host{};
+  std::string path{};
+  std::optional<int> port{};
+  Scheme scheme{Scheme::UNKNOWN};
+  // TODO: Refactor
+  struct DataScheme {
+    std::string protocol;
+    std::string data;
+  } data_scheme{};
 
   /**
    * @brief Check if the URL scheme is in the given scheme
@@ -49,5 +41,8 @@ class URL : public IUrl {
    * @return  bool True if the scheme matches any in the vector, false otherwise
    */
   [[nodiscard]] bool is_scheme_in(const std::vector<Scheme>& ss) const;
+
+ private:
+  Logger& logger = Logger::getInstance();
 };
-}  // namespace url
+}  // namespace my_b::url

@@ -4,6 +4,11 @@
     "command": "./build.sh",
     "use_new_terminal": false
   },
+  {
+    "label": "configure (debug)",
+    "command": "cmake --preset=default -DCMAKE_BUILD_TYPE=Debug -B build -G Ninja",
+    "use_new_terminal": false
+  },
 
   {
     "label": "Build (debug)",
@@ -12,7 +17,7 @@
   },
   {
     "label": "configure (release)",
-    "command": "cmake --preset=default -DCMAKE_BUILD_TYPE=Release -B build-release",
+    "command": "cmake --preset=default -DCMAKE_BUILD_TYPE=Release -B build-release -G Ninja",
     "use_new_terminal": false
   },
   {

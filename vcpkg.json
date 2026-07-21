@@ -1,10 +1,18 @@
 {
-    "builtin-baseline": "d2845dc758c3ba057efce12d8d4c1ebf9c9dd33d",
-    "dependencies": ["fmt", "gtest", "icu", "openssl", "sfml", "zlib"],
-    "overrides": [
-        {
-            "name": "sfml",
-            "version": "2.6.1"
-        }
-    ]
+  "builtin-baseline": "d2845dc758c3ba057efce12d8d4c1ebf9c9dd33d",
+  "dependencies": [
+    "fmt",
+    "gtest",
+    "icu",
+    "openssl",
+    "sfml",
+    "zlib",
+    "magic-enum"
+  ],
+  "overrides": [
+    {
+      "name": "sfml",
+      "version": "2.6.1"
+    }
+  ]
 }

@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include "layout/layout.hpp"
 
-namespace resource {
+namespace my_b::resource {
 class ResourceManager {
  public:
   static std::optional<sf::Texture> get_texture(const std::string& id);
@@ -17,4 +17,4 @@ class ResourceManager {
                   std::tuple<sf::Text, sf::String>>
       m_font_cache;
 };
-}  // namespace resource
+}  // namespace my_b::resource

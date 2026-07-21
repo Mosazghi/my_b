@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
 #include <string>
-#include "common.hpp"
-#include "layout/layout.hpp"
+#include "common/common.hpp"
 
-using layout::Tag;
-using layout::Text;
+using namespace my_b;
+using namespace my_b::layout;
 
 TEST(CommonLex, PlainText) {
   std::string body = "Hello world";

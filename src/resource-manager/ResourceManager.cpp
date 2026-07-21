@@ -1,15 +1,14 @@
 #include "ResourceManager.h"
 #include <format>
-#include <iostream>
 #include <map>
 #include <optional>
 #include <string>
-#include <system_error>
 #include <tuple>
 #include "SFML/Graphics/Texture.hpp"
 #include "layout/layout.hpp"
 
-namespace resource {
+using namespace my_b;
+namespace my_b::resource {
 
 std::unordered_map<std::string, sf::Texture> ResourceManager::m_texture_cache;
 std::map<std::tuple<std::string, int, std::string, std::string>,
@@ -57,4 +56,4 @@ std::tuple<sf::Text, sf::String> ResourceManager::get_font(
   return m_font_cache.at(key);
 }
 
-}  // namespace resource
+}  // namespace my_b::resource

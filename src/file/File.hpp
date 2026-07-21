@@ -2,7 +2,7 @@
 #include <optional>
 #include <string>
 
-namespace file {
+namespace my_b::file {
 /**
  * @brief Reads the content of a file at the given path
  * @param path Path to the file
@@ -10,4 +10,4 @@ namespace file {
  * optional otherwise
  */
 std::optional<std::string> read(const std::string& path);
-}  // namespace file
+}  // namespace my_b::file

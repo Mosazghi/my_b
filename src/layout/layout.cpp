@@ -1,13 +1,12 @@
 #include "layout.hpp"
 #include <fmt/base.h>
-#include <cmath>
-#include <iostream>
 #include <sstream>
-#include "common.hpp"
+#include "common/common.hpp"
 #include "logger.hpp"
 #include "resource-manager/ResourceManager.h"
+using namespace my_b;
 
-namespace layout {
+namespace my_b::layout {
 
 static void process_word(LayoutContext& ctx, const std::string& word);
 static void process_tag(LayoutContext& ctx, const std::string& tag);
@@ -26,15 +25,15 @@ static void process_token(LayoutContext& ctx, const Token& token) {
     }
   } else {
     auto& tag_token = std::get<Tag>(token);
-    if (tag_token.parent_tag == "head") {
-      return;  // Skip processing tags inside the <head> section
-    }
     ctx.current_tag = &tag_token;
     process_tag(ctx, tag_token.tag);
   }
 }
 
 static void process_word(LayoutContext& ctx, const std::string& word) {
+  if (ctx.current_tag && ctx.current_tag->parent_tag == "head") {
+    return;
+  }
   const bool has_bold = ctx.weight == "bold";
   const float space_width = ctx.font.getGlyph(' ', ctx.size, has_bold).advance;
 
@@ -206,4 +205,4 @@ std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
   flush_line(ctx);
   return ctx.display_content;
 }
-}  // namespace layout
+}  // namespace my_b::layout

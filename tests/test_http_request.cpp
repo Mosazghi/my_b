@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "http/HttpRequest.hpp"
+using namespace my_b;
 
 TEST(HttpMethodToString, MapsEachKnownMethod) {
   EXPECT_EQ(http::http_method_to_string(http::HttpMethod::GET), "GET");

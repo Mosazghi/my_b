@@ -9,17 +9,17 @@
 #include <vector>
 #include "SFML/Graphics/Text.hpp"
 #include "SFML/System/String.hpp"
-namespace layout {
+namespace my_b::layout {
 
 inline constexpr auto HSTEP{13};
 inline constexpr auto VSTEP{15};
 
 namespace TextSize {
 enum : std::uint8_t {
-  Large = 16,
-  Medium = 14,
-  Normal = 11,
-  Small = 9,
+  Large = 18,
+  Medium = Large - 2,
+  Normal = Medium - 2,
+  Small = Normal - 2,
   Super = Medium / 2
 };
 };
@@ -68,4 +68,4 @@ struct LayoutContext {
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
                                       sf::Font& font, int window_width);
-};  // namespace layout
+};  // namespace my_b::layout

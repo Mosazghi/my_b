@@ -9,13 +9,12 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
-#include <stack>
 #include <string>
 #include <unordered_set>
 #include <vector>
 #include "utils.hpp"
-
-namespace common {
+using namespace my_b;
+namespace my_b::common {
 
 #ifdef DEBUG
 void print_token_tree(const std::vector<layout::Token>& tokens) {
@@ -139,9 +138,9 @@ std::vector<layout::Token> lex(std::string& body) {
     result.emplace_back(Text(buffer));
   }
 
-#ifdef DEBUG
-  print_token_tree(result);
-#endif
+  // #ifdef DEBUG
+  //   print_token_tree(result);
+  // #endif
   return result;
 }
 
@@ -157,4 +156,4 @@ std::string get_emoji_id(sf::Uint32 codepoint) {
   return id_stream.str();
 }
 
-}  // namespace common
+}  // namespace my_b::common

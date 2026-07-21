@@ -1,5 +1,0 @@
-ignore:
-  - "tests/**/*" 
-  - "*_test.cpp"
-  - "build/**/*
-  - "third_party/**/*" 

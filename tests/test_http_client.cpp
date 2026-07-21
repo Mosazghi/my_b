@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include "http/HttpClient.hpp"
 #include "http/HttpRequest.hpp"
-
+using namespace my_b;
 class HttpTest : public ::testing::Test {
  protected:
   void SetUp() override {

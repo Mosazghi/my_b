@@ -1,4 +1,3 @@
-#include "HttpClient.hpp"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -10,20 +9,19 @@
 #include <unistd.h>
 #include <algorithm>
 #include <cassert>
-#include <http/HttpClient.hpp>
-// #include <zlib.h>
-#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <format>
+#include <http/HttpClient.hpp>
 #include <optional>
 #include <regex>
 #include <utility>
 #include "HttpRequest.hpp"
 #include "logger.hpp"
 #include "utils.hpp"
+using namespace my_b;
 
-namespace http {
+namespace my_b::http {
 
 std::string HttpClient::get_cache_key(const HttpReqParams& p) const {
   return std::format("{}:{}", p.hostname, p.port);
@@ -535,4 +533,4 @@ uint16_t HttpClient::get_content_len(const std::string& header) const {
   return content_length;
 }
 
-}  // namespace http
+}  // namespace my_b::http
