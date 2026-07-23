@@ -22,7 +22,7 @@ void UiManager::draw(int) {
   }
 }
 
-void UiManager::update(sf::Event& event) {
+void UiManager::handle_event(sf::Event& event) {
   for (const auto& element : m_ui_elements) {
     element->handle_event(event, m_window);
   }

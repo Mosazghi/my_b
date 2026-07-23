@@ -1,12 +1,11 @@
 #include "Scrollbar.hpp"
 #include <fmt/base.h>
 #include <algorithm>
+#include <magic_enum/magic_enum.hpp>
 #include "SFML/Graphics/Color.hpp"
 
 using namespace my_b;
 namespace my_b::ui {
-
-ScrollBar::ScrollBar() {}
 
 void ScrollBar::handle_event(const sf::Event& event, sf::RenderWindow& window) {
   const auto mouse_pos = sf::Mouse::getPosition(window);
@@ -59,25 +58,24 @@ void ScrollBar::update_geometry(const sf::Vector2i& mouse_pos,
 }
 
 void ScrollBar::draw(sf::RenderTarget& target, sf::RenderStates states) const {
-  if (static_cast<float>(m_state.content_height) <=
-      static_cast<float>(m_state.viewport_height)) {
+  if (m_state.content_height <= m_state.viewport_height) {
     return;
   }
+
+  states.transform *= getTransform();
 
   if (m_state.is_hovering_container) {
     target.draw(m_container, states);
   }
 
-  bool should_hide =
+  bool should_hide_thumb =
       m_state.last_scroll_time + std::chrono::milliseconds(1500) <
       std::chrono::steady_clock::now();
 
-  if (should_hide && !m_state.is_hovering_thumb) {
+  if (should_hide_thumb && !m_state.is_hovering_thumb) {
     return;
   }
 
-  // Viktig: Bruk transformasjonen slik at setPosition() fungerer utenfra
-  states.transform *= getTransform();
   target.draw(m_thumb, states);
 }
 
@@ -92,26 +90,22 @@ void ScrollBar::mouse_click_scroll(const sf::Event& /*event*/,
     return;
   }
 
-  set_scroll_pos(
-      get_scroll_pos_from_mouse(static_cast<sf::Vector2f>(mouse_pos)));
+  set_scroll_pos(get_scroll_pos_from_mouse(mouse_pos));
 }
 
 void ScrollBar::mouse_hold_scroll(const sf::Event& event,
                                   const sf::Vector2i& mouse_pos) {
-  static bool is_scrolling = false;
-
   if (event.type == sf::Event::MouseButtonPressed &&
       event.mouseButton.button == sf::Mouse::Left &&
       m_state.is_hovering_thumb) {
-    is_scrolling = true;
+    m_state.is_dragging = true;
   } else if (event.type == sf::Event::MouseButtonReleased &&
              event.mouseButton.button == sf::Mouse::Left) {
-    is_scrolling = false;
+    m_state.is_dragging = false;
   }
 
-  if (is_scrolling) {
-    set_scroll_pos(
-        get_scroll_pos_from_mouse(static_cast<sf::Vector2f>(mouse_pos)));
+  if (m_state.is_dragging && event.type == sf::Event::MouseMoved) {
+    set_scroll_pos(get_scroll_pos_from_mouse(mouse_pos));
   }
 }
 
@@ -121,13 +115,13 @@ void ScrollBar::set_scroll_pos(float pos) {
 }
 
 float ScrollBar::get_scroll_pos_from_mouse(
-    const sf::Vector2f& local_mouse) const {
+    const sf::Vector2i& local_mouse) const {
   const float track_top = m_container.getPosition().y;
   const float track_height = m_container.getSize().y;
   const float thumb_height = m_thumb.getSize().y;
 
-  const float max_scroll = std::max(
-      0.f, (float)m_state.content_height - (float)m_state.viewport_height);
+  const float max_scroll =
+      std::max(0, m_state.content_height - m_state.viewport_height);
   const float track_range = std::max(1.f, track_height - thumb_height);
 
   float t = (local_mouse.y - track_top - thumb_height * 0.5f) / track_range;
@@ -136,23 +130,15 @@ float ScrollBar::get_scroll_pos_from_mouse(
 }
 
 void ScrollBar::mouse_scroll(const sf::Event& event) {
-  constexpr int scroll_step = 100;
-  ScrollDirection direction = event.mouseWheelScroll.delta > 0
-                                  ? ScrollDirection::UP
-                                  : ScrollDirection::DOWN;
+  constexpr float scroll_sensitivity = 150.0f;
+  const float delta = event.mouseWheelScroll.delta;
 
-  const auto scroll_pos = m_state.scroll_pos;
-  if (direction == ScrollDirection::UP) {
-    set_scroll_pos(std::max(0.f, static_cast<float>(scroll_pos - scroll_step)));
-  } else {
-    int max_scroll =
-        std::max(0, m_state.content_height - m_state.viewport_height);
-    if (scroll_pos >= max_scroll) {
-      return;
-    }
-    set_scroll_pos(std::min(static_cast<float>(max_scroll),
-                            static_cast<float>(scroll_pos + scroll_step)));
-  }
+  const float new_pos =
+      static_cast<float>(m_state.scroll_pos) - (delta * scroll_sensitivity);
+  const int max_scroll =
+      std::max(0, m_state.content_height - m_state.viewport_height);
+
+  set_scroll_pos(std::clamp(static_cast<int>(new_pos), 0, max_scroll));
 }
 
 }  // namespace my_b::ui
