@@ -5,6 +5,7 @@ set(TEST_SOURCES
     test_file.cpp
     test_http_client.cpp
     test_http_request.cpp
+    test_ui_manager.cpp
     test_url.cpp
     test_utilites.cpp
 )
