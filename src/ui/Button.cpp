@@ -8,8 +8,7 @@ Button::Button(const sf::Vector2f& position, const sf::Vector2f& size,
     : m_normalColor(sf::Color(70, 70, 70)),
       m_hoverColor(sf::Color(100, 100, 100)),
       m_pressedColor(sf::Color(40, 40, 40)),
-      m_rect(size, 8.0f),
-      m_anchor(position) {
+      m_rect(size, 10.0f) {
   m_rect.setFillColor(m_normalColor);
   m_rect.setPosition(position);
   m_text_obj.setFont(font);
@@ -62,10 +61,6 @@ void Button::handle_event(const sf::Event& event, sf::RenderWindow& window) {
   update_visuals();
 }
 
-void Button::set_scroll_offset(float offset) {
-  setPosition(m_anchor.x, m_anchor.y - offset);
-}
-
 void Button::set_on_click(std::function<void()> on_click) {
   m_on_click = std::move(on_click);
 }
@@ -77,7 +72,6 @@ void Button::set_text(const std::string& text) {
 
 void Button::set_position(const sf::Vector2f& position) {
   m_rect.setPosition(position);
-  m_anchor = position;
   update_text();
 }
 
@@ -91,7 +85,10 @@ void Button::set_text_color(const sf::Color& color) {
   update_text();
 }
 
-void Button::set_font(const sf::Font& font) { m_text_obj.setFont(font); }
+void Button::set_font(const sf::Font& font) {
+  m_text_obj.setFont(font);
+  update_text();
+}
 
 void Button::set_text_size(unsigned int size) {
   m_text_obj.setCharacterSize(size);
@@ -99,11 +96,11 @@ void Button::set_text_size(unsigned int size) {
 }
 
 void Button::update_text() {
-  sf::FloatRect textRect = m_text_obj.getLocalBounds();
+  const sf::FloatRect textRect = m_text_obj.getLocalBounds();
   m_text_obj.setOrigin(textRect.left + textRect.width / 2.0f,
                        textRect.top + textRect.height / 2.0f);
 
-  sf::FloatRect buttonRect = m_rect.getGlobalBounds();
+  const sf::FloatRect buttonRect = m_rect.getGlobalBounds();
   m_text_obj.setPosition(buttonRect.left + buttonRect.width / 2.0f,
                          buttonRect.top + buttonRect.height / 2.0f);
 }

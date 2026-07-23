@@ -27,7 +27,7 @@ class ScrollBar : public UiElement {
   static constexpr float SCROLL_BAR_WIDTH{20.f};
 
  public:
-  ScrollBar() = default;
+  ScrollBar();
   ~ScrollBar() override = default;
 
   void update(int content_height, int viewport_height,

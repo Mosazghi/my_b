@@ -6,8 +6,8 @@
 namespace my_b::ui {
 class RoundedRectangleShape : public sf::Shape {
  public:
-  RoundedRectangleShape(sf::Vector2f size, float radius,
-                        std::size_t cornerPointsCount = 10);
+  RoundedRectangleShape(const sf::Vector2f size, const float radius,
+                        const std::size_t cornerPointsCount = 10);
 
   void set_size(sf::Vector2f size);
   void set_corner_radius(float radius);

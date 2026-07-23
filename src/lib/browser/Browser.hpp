@@ -6,13 +6,13 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "../ui/Scrollbar.hpp"
+#include "../ui/UiManager.hpp"
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Window/Event.hpp"
 #include "http/HttpRequest.hpp"
 #include "logger.hpp"
 #include "resource-loader/ResourceLoader.hpp"
-#include "ui/Scrollbar.hpp"
-#include "ui/UiManager.hpp"
 #include "url/Url.hpp"
 namespace my_b::browser {
 using EventCallback = std::function<void(const sf::Event&)>;

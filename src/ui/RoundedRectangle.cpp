@@ -3,18 +3,19 @@
 #include <cmath>
 
 namespace my_b::ui {
-RoundedRectangleShape::RoundedRectangleShape(sf::Vector2f size, float radius,
-                                             std::size_t cornerPointCount)
+RoundedRectangleShape::RoundedRectangleShape(const sf::Vector2f size,
+                                             const float radius,
+                                             const std::size_t cornerPointCount)
     : m_size(size), m_radius(radius), m_cornerPointCount(cornerPointCount) {
   update();
 }
 
-void RoundedRectangleShape::set_size(sf::Vector2f size) {
+void RoundedRectangleShape::set_size(const sf::Vector2f size) {
   m_size = size;
   update();
 }
 
-void RoundedRectangleShape::set_corner_radius(float radius) {
+void RoundedRectangleShape::set_corner_radius(const float radius) {
   m_radius = radius;
   update();
 }

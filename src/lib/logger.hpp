@@ -53,7 +53,7 @@ class Logger {
     log(LogLevel::DBG, format, std::forward<Args>(args)...);
 #else
     do {
-    } while (0);
+    } while (false);
 #endif
   }
 

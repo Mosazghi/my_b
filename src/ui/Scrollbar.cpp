@@ -6,23 +6,19 @@
 using namespace my_b;
 namespace my_b::ui {
 
+ScrollBar::ScrollBar() {}
+
 void ScrollBar::handle_event(const sf::Event& event, sf::RenderWindow& window) {
   const auto mouse_pos = sf::Mouse::getPosition(window);
 
-  switch (event.type) {
-    case sf::Event::EventType::MouseWheelScrolled:
-      mouse_scroll(event);
-      break;
-    case sf::Event::EventType::MouseMoved:
-    case sf::Event::EventType::MouseButtonReleased:
-      mouse_hold_scroll(event, mouse_pos);
-      break;
-    case sf::Event::EventType::MouseButtonPressed:
-      mouse_hold_scroll(event, mouse_pos);
-      mouse_click_scroll(event, mouse_pos);
-      break;
-    default:
-      break;
+  if (event.type == sf::Event::EventType::MouseWheelScrolled) {
+    mouse_scroll(event);
+  } else if (event.type == sf::Event::EventType::MouseMoved ||
+             event.type == sf::Event::EventType::MouseButtonReleased ||
+             event.type == sf::Event::EventType::MouseButtonPressed) {
+    mouse_hold_scroll(event, mouse_pos);
+  } else if (event.type == sf::Event::EventType::MouseButtonPressed) {
+    mouse_click_scroll(event, mouse_pos);
   }
 
   update_geometry(mouse_pos, window.getSize());

@@ -10,7 +10,7 @@ class UiManager {
   ~UiManager();
   void draw(int y_offset = 0);
   void update(sf::Event& event);
-  void removeElement(UiElement* element);
+  void remove_element(UiElement* element);
 
   template <typename T, typename... Args>
   T* create_element(Args&&... args) {
@@ -23,7 +23,6 @@ class UiManager {
  private:
   sf::RenderWindow& m_window;
   std::vector<std::unique_ptr<UiElement>> m_ui_elements;
-  float m_applied_y_offset{0.f};
 };
 
 }  // namespace my_b::ui

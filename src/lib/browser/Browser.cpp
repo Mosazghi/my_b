@@ -7,6 +7,8 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include "../ui/Button.hpp"
+#include "../ui/Scrollbar.hpp"
 #include "SFML/Graphics/Sprite.hpp"
 #include "SFML/Graphics/Texture.hpp"
 #include "SFML/Graphics/View.hpp"
@@ -17,8 +19,6 @@
 #include "layout/layout.hpp"
 #include "resource-loader/ResourceLoader.hpp"
 #include "resource-manager/ResourceManager.h"
-#include "ui/Button.hpp"
-#include "ui/Scrollbar.hpp"
 #include "url/Url.hpp"
 using namespace my_b;
 namespace my_b::browser {
@@ -37,11 +37,25 @@ Browser::Browser(sf::RenderWindow& window)
 
   m_top_scrollbar = m_ui_manager.create_element<ui::ScrollBar>();
   auto button = m_ui_manager.create_element<ui::Button>(
-      sf::Vector2f{100, 100}, sf::Vector2f{200, 50}, "Test Button", m_font);
+      sf::Vector2f{0, 200}, sf::Vector2f{100, 50}, "Test Button", m_font);
   button->set_on_click([&]() { fmt::println("Clicked"); });
   button->set_normal_color(sf::Color::Green);
   button->set_text_color(sf::Color::Red);
   button->set_text_size(20);
+
+  auto button2 = m_ui_manager.create_element<ui::Button>(
+      sf::Vector2f{100, 150}, sf::Vector2f{200, 50}, "Test Button 2", m_font);
+  button2->set_on_click([&]() { fmt::println("Clicked 2"); });
+  button2->set_normal_color(sf::Color::Blue);
+  button2->set_text_color(sf::Color::White);
+  button2->set_text_size(20);
+
+  auto button3 = m_ui_manager.create_element<ui::Button>(
+      sf::Vector2f{500, 150}, sf::Vector2f{300, 50}, "Test Button 3", m_font);
+  button3->set_on_click([&]() { fmt::println("Clicked 3"); });
+  button3->set_normal_color(sf::Color::Red);
+  button3->set_text_color(sf::Color::White);
+  button3->set_text_size(20);
 
   register_event_handlers();
 }

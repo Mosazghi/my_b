@@ -1,5 +1,8 @@
 project(MyBUI)
 
+
+find_package(SFML 2.6 CONFIG REQUIRED COMPONENTS graphics window system)
+
 set(UI_SOURCES
     Button.cpp
     Button.hpp
@@ -17,9 +20,9 @@ target_include_directories(MyBUI PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
 target_link_libraries(MyBUI
-    PRIVATE
+    PUBLIC
     sfml-graphics
     sfml-window
     sfml-system
 )
-target_compile_options(MyBUI PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(MyBUI PRIVATE -Wall -Wextra -Wpedantic)

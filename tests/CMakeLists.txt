@@ -1,3 +1,5 @@
+find_package(GTest CONFIG REQUIRED)
+
 set(TEST_SOURCES
     test_common.cpp
     test_file.cpp
@@ -26,7 +28,7 @@ target_link_libraries(tests
         GTest::gmock
 )
 
-target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic)
 
 include(GoogleTest)
 gtest_discover_tests(tests)

@@ -31,7 +31,6 @@ class Button : public UiElement {
   void set_normal_color(const sf::Color& color);
   void set_hover_color(const sf::Color& color);
   void set_pressed_color(const sf::Color& color);
-  void set_scroll_offset(float offset) override;
 
  private:
   void update_text();
@@ -42,8 +41,7 @@ class Button : public UiElement {
   std::string m_text;
   std::function<void()> m_on_click;
   RoundedRectangleShape m_rect;
-  sf::Vector2f m_anchor{};
-  State m_state = State::Normal;
+  State m_state{State::Normal};
   sf::Text m_text_obj;
 };
 
