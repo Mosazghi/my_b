@@ -10,7 +10,7 @@
 #include <cassert>
 #include <magic_enum/magic_enum.hpp>
 #include "logger.hpp"
-#include "utils.hpp"
+#include "utils/utils.hpp"
 using namespace my_b;
 namespace my_b::url {
 

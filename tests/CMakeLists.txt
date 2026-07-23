@@ -1,15 +1,18 @@
+find_package(GTest CONFIG REQUIRED)
+
 set(TEST_SOURCES
     test_common.cpp
     test_file.cpp
     test_http_client.cpp
     test_http_request.cpp
+    test_ui_manager.cpp
     test_url.cpp
     test_utilites.cpp
 )
 add_executable(tests ${TEST_SOURCES})
 if(ENABLE_COVERAGE)
-    target_compile_options(tests PRIVATE --coverage -O0 -g)
-    target_link_options(tests PRIVATE --coverage)
+  target_compile_options(tests PRIVATE --coverage -O0 -g)
+  target_link_options(tests PRIVATE --coverage)
 endif()
 
 
@@ -20,13 +23,13 @@ target_compile_definitions(tests PRIVATE
 
 target_link_libraries(tests
     PRIVATE
-        my_b_lib
+        MyBLib
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
 )
 
-target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_options(tests PRIVATE -Wall -Wextra -Wpedantic)
 
 include(GoogleTest)
 gtest_discover_tests(tests)

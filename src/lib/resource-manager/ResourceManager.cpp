@@ -37,6 +37,7 @@ std::tuple<sf::Text, sf::String> ResourceManager::get_font(
     sf::String sf_word = sf::String::fromUtf8(word.begin(), word.end());
 
     sf::Text sf_text(sf_word, ctx.font, ctx.size);
+
     sf::Uint32 style = sf::Text::Regular;
     if (ctx.weight == "bold") {
       style |= sf::Text::Bold;

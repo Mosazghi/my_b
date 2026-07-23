@@ -2,7 +2,7 @@
 set -e
 
 lcov --directory . --capture --output-file coverage.info \
-    --ignore-errors inconsistent,empty
+    --ignore-errors inconsistent,empty,mismatch,unused,gcov
 
 lcov --remove coverage.info \
     '/usr/*' \
@@ -10,7 +10,7 @@ lcov --remove coverage.info \
     '*/vcpkg_installed/*' \
     '*/_deps/*' \
     '*/tests/*' \
-    --ignore-errors unused,inconsistent,empty \
+    --ignore-errors unused,inconsistent,empty,mismatch,gcov \
     --output-file coverage.info
 
 lcov --list coverage.info

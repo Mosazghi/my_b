@@ -5,7 +5,6 @@
 #include <memory>
 #include <string>
 #include "browser/Browser.hpp"
-#include "http/HttpClient.hpp"
 #include "imgui-SFML.h"
 #include "url/Url.hpp"
 using namespace my_b;
@@ -44,6 +43,7 @@ int main(int argc, char** argv) {
   sf::RenderWindow window(sf::VideoMode({1280, 720}), "My Browser",
                           sf::Style::Default | sf::Style::Resize);
   window.setFramerateLimit(120);
+
   if (!ImGui::SFML::Init(window)) {
     logger.err("Failed to initialize ImGui-SFML.");
     return EXIT_FAILURE;
