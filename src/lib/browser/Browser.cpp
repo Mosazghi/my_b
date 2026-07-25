@@ -7,7 +7,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "../ui/Button.hpp"
 #include "../ui/Scrollbar.hpp"
 #include "SFML/Graphics/Sprite.hpp"
 #include "SFML/Graphics/Texture.hpp"
