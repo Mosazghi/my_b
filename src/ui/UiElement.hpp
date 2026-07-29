@@ -10,7 +10,6 @@ class UiElement : public sf::Drawable, public sf::Transformable {
   virtual ~UiElement() = default;
   virtual void handle_event(const sf::Event& event,
                             sf::RenderWindow& window) = 0;
-  virtual std::string get_name() const = 0;
   virtual void set_scroll_offset(float /*offset */) {}
 };
 
