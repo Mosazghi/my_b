@@ -16,7 +16,7 @@
 #include "url/Url.hpp"
 namespace my_b::browser {
 using EventCallback = std::function<void(const sf::Event&)>;
-class Browser {
+class Browser : public ui::ScrollBarContainer {
  public:
   explicit Browser(sf::RenderWindow& window);
   void load(const url::URL& url);
@@ -31,7 +31,6 @@ class Browser {
   void register_callback(std::initializer_list<sf::Event::EventType> events,
                          const EventCallback& cb);
   void dispatch_event(const sf::Event& event);
-  void update_ui_elements();
   /**
    * @brief Perform the request for the URL
    * @return std::optional<http::HttpResponse> HTTP response if successful,

@@ -7,7 +7,6 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "../ui/Button.hpp"
 #include "../ui/Scrollbar.hpp"
 #include "SFML/Graphics/Sprite.hpp"
 #include "SFML/Graphics/Texture.hpp"
@@ -36,6 +35,9 @@ Browser::Browser(sf::RenderWindow& window)
   }
 
   m_top_scrollbar = m_ui_manager.create_element<ui::ScrollBar>();
+  subscribe_to_layout([&](const ui::ScrollDimensions& dims) {
+    m_top_scrollbar->on_dimension_changed(dims);
+  });
   register_event_handlers();
 }
 
@@ -121,7 +123,6 @@ void Browser::spin() {
     ImGui::End();
 #endif
     m_window.clear(sf::Color::White);
-    update_ui_elements();
     draw();
 #ifdef DEBUG
     ImGui::SFML::Render(m_window);
@@ -193,16 +194,12 @@ void Browser::draw() {
   m_ui_manager.draw(scroll_pos);
 }
 
-void Browser::update_ui_elements() {
-  if (!m_display_content.empty()) {
-    m_top_scrollbar->set_heights(std::get<1>(m_display_content.back()),
-                                 static_cast<int>(m_window.getSize().y));
-  }
-}
-
 void Browser::relayout_for_current_window_width() {
   m_display_content =
       layout::compute(m_text_content, m_font, m_window.getSize().x);
+  set_content_height(std::get<1>(m_display_content.back()));
+  set_view_height(static_cast<float>(m_window.getSize().y));
+  set_view_width(static_cast<float>(m_window.getSize().x));
 }
 
 }  // namespace my_b::browser

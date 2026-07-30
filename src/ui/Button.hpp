@@ -20,7 +20,6 @@ class Button : public UiElement {
 
   void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
   void handle_event(const sf::Event& event, sf::RenderWindow& window) override;
-  std::string get_name() const override { return "Button"; }
   void set_text(const std::string& text);
   void set_on_click(std::function<void()> callback);
   void set_position(const sf::Vector2f& position);

@@ -1,6 +1,7 @@
 #include "Scrollbar.hpp"
 #include <fmt/base.h>
 #include <algorithm>
+#include <iostream>
 #include <magic_enum/magic_enum.hpp>
 #include "SFML/Graphics/Color.hpp"
 
@@ -20,11 +21,10 @@ void ScrollBar::handle_event(const sf::Event& event, sf::RenderWindow& window) {
     mouse_click_scroll(event, mouse_pos);
   }
 
-  update_geometry(mouse_pos, window.getSize());
+  update_geometry(mouse_pos);
 }
 
-void ScrollBar::update_geometry(const sf::Vector2i& mouse_pos,
-                                const sf::Vector2u& windowSize) {
+void ScrollBar::update_geometry(const sf::Vector2i& mouse_pos) {
   const auto content_h = static_cast<float>(m_state.content_height);
   const auto viewport_h = static_cast<float>(m_state.viewport_height);
   const auto scroll_pos = static_cast<float>(m_state.scroll_pos);
@@ -35,15 +35,15 @@ void ScrollBar::update_geometry(const sf::Vector2i& mouse_pos,
 
   m_container.setSize(sf::Vector2f{SCROLL_BAR_WIDTH, viewport_h});
   m_container.setPosition(
-      sf::Vector2f{static_cast<float>(windowSize.x) - SCROLL_BAR_WIDTH, 0.f});
+      sf::Vector2f{m_state.viewport_width - SCROLL_BAR_WIDTH, 0.f});
   m_container.setFillColor(sf::Color::Transparent);
 
   const auto thumb_h = viewport_h * (viewport_h / content_h);
   const auto thumb_y = scroll_pos * (viewport_h / content_h);
 
   m_thumb.setSize(sf::Vector2f{SCROLL_BAR_WIDTH, thumb_h});
-  m_thumb.setPosition(sf::Vector2f{
-      static_cast<float>(windowSize.x) - SCROLL_BAR_WIDTH, thumb_y});
+  m_thumb.setPosition(
+      sf::Vector2f{m_state.viewport_width - SCROLL_BAR_WIDTH, thumb_y});
 
   m_state.is_hovering_thumb =
       m_thumb.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y);
@@ -79,9 +79,11 @@ void ScrollBar::draw(sf::RenderTarget& target, sf::RenderStates states) const {
   target.draw(m_thumb, states);
 }
 
-void ScrollBar::set_heights(int content_height, int viewport_height) {
-  m_state.content_height = content_height;
-  m_state.viewport_height = viewport_height;
+void ScrollBar::on_dimension_changed(const ui::ScrollDimensions& dims) {
+  std::cout << "hmm" << std::endl;
+  m_state.content_height = dims.content_height;
+  m_state.viewport_height = dims.view_height;
+  m_state.viewport_width = dims.view_width;
 }
 
 void ScrollBar::mouse_click_scroll(const sf::Event& /*event*/,
