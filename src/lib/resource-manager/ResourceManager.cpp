@@ -1,5 +1,7 @@
 #include "ResourceManager.h"
+#include <fmt/base.h>
 #include <format>
+#include <iostream>
 #include <map>
 #include <optional>
 #include <string>

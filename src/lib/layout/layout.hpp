@@ -19,8 +19,9 @@ enum : std::uint8_t {
   Large = 18,
   Medium = Large - 2,
   Normal = Medium - 2,
-  Small = Normal - 2,
-  Super = Medium / 2
+  Small = Normal - 6,
+  Super = Medium / 2,
+  Sub = Super
 };
 };
 

@@ -1,5 +1,6 @@
 #include "layout.hpp"
 #include <fmt/base.h>
+#include <cstdint>
 #include <sstream>
 #include "common/common.hpp"
 #include "logger.hpp"
@@ -59,6 +60,26 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
     ctx.cursor_x += 8;
   }
 
+  bool is_abbr = ctx.current_tag && ctx.current_tag->tag == "abbr";
+  if (is_abbr) {
+    std::string capitalized{text.getString()};
+    for (auto& c : capitalized) {
+      sf::Uint32 style = text.getStyle();
+      sf::Text abbr_text(c, ctx.font, ctx.size);
+
+      if (std::islower(static_cast<uint8_t>(c))) {
+        fmt::println("{} is lower case", c);
+        c = std::toupper(static_cast<uint8_t>(c));
+        style |= sf::Text::Bold;
+        abbr_text.setCharacterSize(7);
+      }
+
+      abbr_text.setString(c);
+      abbr_text.setStyle(style);
+      ctx.line.emplace_back(ctx.cursor_x, element, abbr_text);
+    }
+  }
+
   ctx.line.emplace_back(ctx.cursor_x, element, text);
   ctx.cursor_x += word_width + space_width;
 }
@@ -89,26 +110,28 @@ static void process_tag(LayoutContext& ctx, const std::string& tag) {
        }},
       {"sup",
        [](LayoutContext& c) {
-         c.size -= TextSize::Super;
-
+         c.size = TextSize::Super;
          c.vertical_align = VerticalAlign::Super;
        }},
       {"/sup",
        [](LayoutContext& c) {
-         c.size += TextSize::Super;
+         c.size = TextSize::Normal;
          c.vertical_align = VerticalAlign::Baseline;
        }},
 
       {"sub",
        [](LayoutContext& c) {
-         c.size -= TextSize::Super;
+         c.size = TextSize::Sub;
          c.vertical_align = VerticalAlign::Sub;
        }},
       {"/sub",
        [](LayoutContext& c) {
-         c.size += TextSize::Super;
+         c.size = TextSize::Normal;
          c.vertical_align = VerticalAlign::Baseline;
        }},
+
+      {"abbr", [](LayoutContext& c) { c.size = TextSize::Small; }},
+      {"/abbr", [](LayoutContext& c) { c.size = TextSize::Normal; }},
   };
 
   if (const auto it = tag_actions.find(tag); it != tag_actions.end()) {
