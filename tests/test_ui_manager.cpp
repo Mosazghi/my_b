@@ -51,7 +51,7 @@ TEST_F(UiManagerTest, HandleEventDispatchesToEachCreatedElement) {
   int event_count = 0;
   manager.create_element<RecordingElement>(&draw_count, &event_count);
 
-  sf::Event event{};
+  const sf::Event event{sf::Event::Closed{}};
   manager.handle_event(event);
 
   EXPECT_EQ(event_count, 1);
@@ -66,7 +66,7 @@ TEST_F(UiManagerTest, RemoveElementStopsFurtherDispatch) {
   manager.remove_element(element);
 
   manager.draw();
-  sf::Event event{};
+  const sf::Event event{sf::Event::Closed{}};
   manager.handle_event(event);
 
   EXPECT_EQ(draw_count, 0);

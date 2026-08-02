@@ -2,8 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include <common/common.hpp>
 #include <functional>
-#include <initializer_list>
 #include <memory>
+#include <typeindex>
+#include <typeinfo>
 #include <unordered_map>
 #include <vector>
 #include "../ui/Scrollbar.hpp"
@@ -27,9 +28,12 @@ class Browser : public ui::ScrollBarContainer {
  private:
   void relayout_for_current_window_width();
   void register_event_handlers();
-  void register_callback(sf::Event::EventType event, const EventCallback& cb);
-  void register_callback(std::initializer_list<sf::Event::EventType> events,
-                         const EventCallback& cb);
+
+  template <typename... TEvents>
+  void register_callback(const EventCallback& cb) {
+    (m_event_callbacks[std::type_index(typeid(TEvents))].push_back(cb), ...);
+  }
+
   void dispatch_event(const sf::Event& event);
   /**
    * @brief Perform the request for the URL
@@ -39,7 +43,7 @@ class Browser : public ui::ScrollBarContainer {
   http::HttpResult request(const url::URL& url);
 
   bool m_running{};
-  std::unordered_map<sf::Event::EventType, std::vector<EventCallback>>
+  std::unordered_map<std::type_index, std::vector<EventCallback>>
       m_event_callbacks;
   std::vector<layout::PositionTextPair> m_display_content;
   std::vector<layout::Token> m_text_content;

@@ -8,11 +8,10 @@ Button::Button(const sf::Vector2f& position, const sf::Vector2f& size,
     : m_normalColor(sf::Color(70, 70, 70)),
       m_hoverColor(sf::Color(100, 100, 100)),
       m_pressedColor(sf::Color(40, 40, 40)),
-      m_rect(size, 10.0f) {
+      m_rect(size, 10.0f),
+      m_text_obj(font, text) {
   m_rect.setFillColor(m_normalColor);
   m_rect.setPosition(position);
-  m_text_obj.setFont(font);
-  m_text_obj.setString(text);
 }
 
 void Button::draw(sf::RenderTarget& target, sf::RenderStates states) const {
@@ -27,20 +26,20 @@ void Button::handle_event(const sf::Event& event, sf::RenderWindow& window) {
   const auto is_hovered =
       m_rect.getGlobalBounds().contains(static_cast<sf::Vector2f>(mouse_pos));
 
-  if (event.type == sf::Event::MouseMoved) {
+  if (event.is<sf::Event::MouseMoved>()) {
     if (m_state != State::Pressed) {
       m_state = is_hovered ? State::Hover : State::Normal;
     }
   }
 
-  if (event.type == sf::Event::MouseButtonPressed) {
+  if (event.is<sf::Event::MouseButtonPressed>()) {
     if (is_hovered) {
       m_state = State::Pressed;
     }
   }
 
-  if (event.type == sf::Event::MouseButtonReleased &&
-      event.mouseButton.button == sf::Mouse::Left) {
+  const auto* released = event.getIf<sf::Event::MouseButtonReleased>();
+  if (released && released->button == sf::Mouse::Button::Left) {
     if (m_state == State::Pressed) {
       m_state = is_hovered ? State::Hover : State::Normal;
       if (is_hovered && m_on_click) {
@@ -48,13 +47,17 @@ void Button::handle_event(const sf::Event& event, sf::RenderWindow& window) {
       }
     }
   }
-  sf::Cursor cursor;
 
-  if (cursor.loadFromSystem(sf::Cursor::Hand) && is_hovered) {
-    window.setMouseCursor(cursor);
+  static const auto hand_cursor =
+      sf::Cursor::createFromSystem(sf::Cursor::Type::Hand);
+  static const auto arrow_cursor =
+      sf::Cursor::createFromSystem(sf::Cursor::Type::Arrow);
+
+  if (hand_cursor && is_hovered) {
+    window.setMouseCursor(*hand_cursor);
   } else {
-    if (cursor.loadFromSystem(sf::Cursor::Arrow) && was_hovered) {
-      window.setMouseCursor(cursor);
+    if (arrow_cursor && was_hovered) {
+      window.setMouseCursor(*arrow_cursor);
     }
   }
   was_hovered = is_hovered;
@@ -97,12 +100,10 @@ void Button::set_text_size(unsigned int size) {
 
 void Button::update_text() {
   const sf::FloatRect textRect = m_text_obj.getLocalBounds();
-  m_text_obj.setOrigin(textRect.left + textRect.width / 2.0f,
-                       textRect.top + textRect.height / 2.0f);
+  m_text_obj.setOrigin(textRect.position + textRect.size / 2.0f);
 
   const sf::FloatRect buttonRect = m_rect.getGlobalBounds();
-  m_text_obj.setPosition(buttonRect.left + buttonRect.width / 2.0f,
-                         buttonRect.top + buttonRect.height / 2.0f);
+  m_text_obj.setPosition(buttonRect.position + buttonRect.size / 2.0f);
 }
 
 void Button::update_visuals() {

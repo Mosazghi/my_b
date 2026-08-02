@@ -1,5 +1,5 @@
 {
-  "builtin-baseline": "d2845dc758c3ba057efce12d8d4c1ebf9c9dd33d",
+  "builtin-baseline": "43643e1f5cf73db40d0d4bd610183348eb09b24e",
   "dependencies": [
     "fmt",
     "gtest",
@@ -12,7 +12,7 @@
   "overrides": [
     {
       "name": "sfml",
-      "version": "2.6.1"
+      "version": "3.0.2"
     }
   ]
 }

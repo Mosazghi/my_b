@@ -9,7 +9,7 @@ class UiManager {
   UiManager(sf::RenderWindow& window);
   ~UiManager();
   void draw(int y_offset = 0);
-  void handle_event(sf::Event& event);
+  void handle_event(const sf::Event& event);
   void remove_element(UiElement* element);
 
   template <typename T, typename... Args>

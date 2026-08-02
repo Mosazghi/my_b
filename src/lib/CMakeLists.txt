@@ -2,7 +2,7 @@ project(MyBLib)
 
 include(FetchContent)
 
-find_package(SFML 2.6 CONFIG REQUIRED COMPONENTS graphics window system)
+find_package(SFML 3 CONFIG REQUIRED COMPONENTS Graphics Window System)
 find_package(ZLIB REQUIRED)
 find_package(ICU REQUIRED COMPONENTS uc)
 find_package(OpenSSL REQUIRED)
@@ -13,15 +13,14 @@ find_package(magic_enum CONFIG REQUIRED)
 FetchContent_Declare(
      imgui
      GIT_REPOSITORY https://github.com/ocornut/imgui.git
-     GIT_TAG v1.90.9
+     GIT_TAG v1.91.9
  )
 FetchContent_MakeAvailable(imgui)
 
 FetchContent_Declare(
      imgui-sfml
      GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
-     GIT_TAG 2.6.x
-     PATCH_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/patch_imgui_sfml.cmake ${CMAKE_BINARY_DIR}/_deps/imgui-sfml-src/imgui-SFML.cpp
+     GIT_TAG v3.0
      UPDATE_DISCONNECTED 1
  )
 set(IMGUI_DIR ${imgui_SOURCE_DIR} CACHE PATH "" FORCE)
