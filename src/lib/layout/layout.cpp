@@ -1,5 +1,7 @@
 #include "layout.hpp"
 #include <fmt/base.h>
+#include <SFML/Graphics/Font.hpp>
+#include <SFML/Graphics/Glyph.hpp>
 #include <cstdint>
 #include <sstream>
 #include "common/common.hpp"
@@ -40,7 +42,7 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
 
   auto [text, sf_word] = resource::ResourceManager::get_font(word, ctx);
 
-  auto word_width = text.getLocalBounds().width;
+  auto word_width = text.getLocalBounds().size.x;
 
   LayoutElement element{.type = LayoutElementType::Text,
                         .value = sf_word,
@@ -64,8 +66,8 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
   if (is_abbr) {
     std::string capitalized{text.getString()};
     for (auto& c : capitalized) {
-      sf::Uint32 style = text.getStyle();
-      sf::Text abbr_text(c, ctx.font, ctx.size);
+      std::uint32_t style = text.getStyle();
+      sf::Text abbr_text(ctx.font, c, ctx.size);
 
       if (std::islower(static_cast<uint8_t>(c))) {
         fmt::println("{} is lower case", c);
@@ -156,8 +158,8 @@ static void flush_line(LayoutContext& ctx) {
     float descent = 0.f;
     for (std::size_t k = 0; k < word.getSize(); ++k) {
       const sf::Glyph& g = ctx.font.getGlyph(word[k], size, bold);
-      ascent = std::max(ascent, -g.bounds.top);
-      descent = std::max(descent, g.bounds.top + g.bounds.height);
+      ascent = std::max(ascent, -g.bounds.position.y);
+      descent = std::max(descent, g.bounds.position.y + g.bounds.size.y);
     }
     metrics[i] = std::make_tuple(ascent, descent);
   }
@@ -181,7 +183,8 @@ static void flush_line(LayoutContext& ctx) {
   }();
   const float first_x = std::get<0>(ctx.line.front());
   const float last_x = std::get<0>(ctx.line.back());
-  const float last_word_w = std::get<2>(ctx.line.back()).getLocalBounds().width;
+  const float last_word_w =
+      std::get<2>(ctx.line.back()).getLocalBounds().size.x;
   const float line_width = (last_x + last_word_w) - first_x;
 
   const float shift = (ctx.window_width - line_width) / 2.0f - first_x;

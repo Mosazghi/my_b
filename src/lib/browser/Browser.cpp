@@ -5,6 +5,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 #include "../ui/Scrollbar.hpp"
@@ -29,7 +30,7 @@ Browser::Browser(sf::RenderWindow& window)
           std::make_unique<loader::ResourceLoader>(std::move(m_http_client))),
       m_window{window},
       m_ui_manager{m_window} {
-  if (!m_font.loadFromFile("assets/NotoSans-Regular.ttf")) {
+  if (!m_font.openFromFile("assets/NotoSans-Regular.ttf")) {
     logger.err("Error loading font\n");
     return;
   }
@@ -51,40 +52,30 @@ void Browser::load(const url::URL& url) {
 }
 
 void Browser::register_event_handlers() {
-  register_callback(sf::Event::EventType::Closed, [&](const sf::Event&) {
+  register_callback<sf::Event::Closed>([&](const sf::Event&) {
     m_running = false;
     m_window.close();
   });
 
-  register_callback(sf::Event::EventType::KeyPressed, [&](const sf::Event& e) {
-    if (e.key.code == sf::Keyboard::Escape) {
+  register_callback<sf::Event::KeyPressed>([&](const sf::Event& e) {
+    if (e.getIf<sf::Event::KeyPressed>()->code == sf::Keyboard::Key::Escape) {
       m_running = false;
       m_window.close();
     }
   });
 
-  register_callback(sf::Event::EventType::Resized, [&](const sf::Event& e) {
-    sf::FloatRect visibleArea(0, 0, e.size.width, e.size.height);
+  register_callback<sf::Event::Resized>([&](const sf::Event& e) {
+    const auto size = e.getIf<sf::Event::Resized>()->size;
+    const sf::FloatRect visibleArea({0.f, 0.f}, sf::Vector2f(size));
     m_window.setView(sf::View(visibleArea));
     relayout_for_current_window_width();
   });
 }
 
-void Browser::register_callback(sf::Event::EventType event,
-                                const EventCallback& cb) {
-  m_event_callbacks[event].push_back(cb);
-}
-
-void Browser::register_callback(
-    std::initializer_list<sf::Event::EventType> events,
-    const EventCallback& cb) {
-  for (const auto& event : events) {
-    m_event_callbacks[event].push_back(cb);
-  }
-}
-
 void Browser::dispatch_event(const sf::Event& event) {
-  auto it = m_event_callbacks.find(event.type);
+  const auto type =
+      event.visit([](const auto& e) { return std::type_index(typeid(e)); });
+  auto it = m_event_callbacks.find(type);
   if (it == m_event_callbacks.end()) {
     return;
   }
@@ -99,13 +90,12 @@ void Browser::spin() {
   unsigned int frameCount = 0;
   float currentFPS = 0.0f;
   while (m_running && m_window.isOpen()) {
-    sf::Event event;
-    while (m_window.pollEvent(event)) {
+    while (const std::optional event = m_window.pollEvent()) {
 #ifdef DEBUG
-      ImGui::SFML::ProcessEvent(m_window, event);
+      ImGui::SFML::ProcessEvent(m_window, *event);
 #endif
-      dispatch_event(event);
-      m_ui_manager.handle_event(event);
+      dispatch_event(*event);
+      m_ui_manager.handle_event(*event);
     }
 
 #ifdef DEBUG
@@ -156,21 +146,26 @@ void Browser::draw() {
       continue;
     }
 
+    const sf::Vector2f draw_pos{
+        static_cast<float>(x),
+        static_cast<float>(y) - static_cast<float>(scroll_pos)};
+
     if (element.type == layout::LayoutElementType::Text) {
-      text.setPosition(x, y - scroll_pos);
+      text.setPosition(draw_pos);
       m_window.draw(text);
 #ifdef DEBUG
       const sf::FloatRect bounds = text.getGlobalBounds();
       if (bounds.contains(static_cast<sf::Vector2f>(mouse_pos))) {
-        draw_list->AddRect(
-            ImVec2(bounds.left, bounds.top),
-            ImVec2(bounds.left + bounds.width, bounds.top + bounds.height),
-            IM_COL32(255, 0, 0, 255), 0.0f, 0, 1.5f);
+        draw_list->AddRect(ImVec2(bounds.position.x, bounds.position.y),
+                           ImVec2(bounds.position.x + bounds.size.x,
+                                  bounds.position.y + bounds.size.y),
+                           IM_COL32(255, 0, 0, 255), 0.0f, 0, 1.5f);
 
         ImGui::SetTooltip(
             "Text: \"%s\"\nPos: (%.1f, %.1f)\nSize: %.1f x %.1f\nFont size: %i",
-            text.getString().toAnsiString().c_str(), bounds.left, bounds.top,
-            bounds.width, bounds.height, text.getCharacterSize());
+            text.getString().toAnsiString().c_str(), bounds.position.x,
+            bounds.position.y, bounds.size.x, bounds.size.y,
+            text.getCharacterSize());
       }
 #endif
     } else {
@@ -184,9 +179,9 @@ void Browser::draw() {
       const auto target_size = static_cast<float>(text.getCharacterSize());
       const auto tex_size = (*texture).getSize();
       const auto scale = target_size / static_cast<float>(tex_size.y);
-      emoji.setScale(scale, scale);
+      emoji.setScale({scale, scale});
 
-      emoji.setPosition(x, y - scroll_pos);
+      emoji.setPosition(draw_pos);
       m_window.draw(emoji);
     }
   }

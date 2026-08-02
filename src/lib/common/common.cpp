@@ -144,12 +144,12 @@ std::vector<layout::Token> lex(std::string& body) {
   return result;
 }
 
-bool isEmoji(sf::Uint32 codepoint) {
+bool isEmoji(std::uint32_t codepoint) {
   auto c = static_cast<UChar32>(codepoint);
   return u_hasBinaryProperty(c, UCHAR_EMOJI_PRESENTATION);
 }
 
-std::string get_emoji_id(sf::Uint32 codepoint) {
+std::string get_emoji_id(std::uint32_t codepoint) {
   std::stringstream id_stream;
   id_stream << std::hex << std::uppercase << std::setfill('0') << std::setw(5)
             << static_cast<uint32_t>(codepoint) << std::dec;

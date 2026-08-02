@@ -1,5 +1,6 @@
 #include "ResourceManager.h"
 #include <fmt/base.h>
+#include <cstdint>
 #include <format>
 #include <iostream>
 #include <map>
@@ -38,9 +39,9 @@ std::tuple<sf::Text, sf::String> ResourceManager::get_font(
   if (!m_font_cache.contains(key)) {
     sf::String sf_word = sf::String::fromUtf8(word.begin(), word.end());
 
-    sf::Text sf_text(sf_word, ctx.font, ctx.size);
+    sf::Text sf_text(ctx.font, sf_word, ctx.size);
 
-    sf::Uint32 style = sf::Text::Regular;
+    std::uint32_t style = sf::Text::Regular;
     if (ctx.weight == "bold") {
       style |= sf::Text::Bold;
     }
@@ -50,10 +51,10 @@ std::tuple<sf::Text, sf::String> ResourceManager::get_font(
 
     sf_text.setFillColor(sf::Color::Black);
     const auto bounds = sf_text.getLocalBounds();
-    sf_text.setOrigin(bounds.left, bounds.top);
+    sf_text.setOrigin(bounds.position);
     sf_text.setStyle(style);
 
-    m_font_cache[key] = std::make_tuple(sf_text, sf_word);
+    m_font_cache.emplace(key, std::make_tuple(sf_text, sf_word));
   }
 
   return m_font_cache.at(key);

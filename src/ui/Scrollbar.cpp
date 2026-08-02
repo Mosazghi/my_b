@@ -11,13 +11,13 @@ namespace my_b::ui {
 void ScrollBar::handle_event(const sf::Event& event, sf::RenderWindow& window) {
   const auto mouse_pos = sf::Mouse::getPosition(window);
 
-  if (event.type == sf::Event::EventType::MouseWheelScrolled) {
+  if (event.is<sf::Event::MouseWheelScrolled>()) {
     mouse_scroll(event);
-  } else if (event.type == sf::Event::EventType::MouseMoved ||
-             event.type == sf::Event::EventType::MouseButtonReleased ||
-             event.type == sf::Event::EventType::MouseButtonPressed) {
+  } else if (event.is<sf::Event::MouseMoved>() ||
+             event.is<sf::Event::MouseButtonReleased>() ||
+             event.is<sf::Event::MouseButtonPressed>()) {
     mouse_hold_scroll(event, mouse_pos);
-  } else if (event.type == sf::Event::EventType::MouseButtonPressed) {
+  } else if (event.is<sf::Event::MouseButtonPressed>()) {
     mouse_click_scroll(event, mouse_pos);
   }
 
@@ -45,13 +45,14 @@ void ScrollBar::update_geometry(const sf::Vector2i& mouse_pos) {
   m_thumb.setPosition(
       sf::Vector2f{m_state.viewport_width - SCROLL_BAR_WIDTH, thumb_y});
 
-  m_state.is_hovering_thumb =
-      m_thumb.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y);
+  const auto mouse_pos_f = static_cast<sf::Vector2f>(mouse_pos);
+
+  m_state.is_hovering_thumb = m_thumb.getGlobalBounds().contains(mouse_pos_f);
 
   m_thumb.setFillColor(m_state.is_hovering_thumb ? sf::Color(180, 180, 180)
                                                  : sf::Color(192, 192, 192));
   m_state.is_hovering_container =
-      m_container.getGlobalBounds().contains(mouse_pos.x, mouse_pos.y);
+      m_container.getGlobalBounds().contains(mouse_pos_f);
   m_container.setFillColor(m_state.is_hovering_container
                                ? sf::Color(220, 220, 220)
                                : sf::Color::Transparent);
@@ -97,16 +98,17 @@ void ScrollBar::mouse_click_scroll(const sf::Event& /*event*/,
 
 void ScrollBar::mouse_hold_scroll(const sf::Event& event,
                                   const sf::Vector2i& mouse_pos) {
-  if (event.type == sf::Event::MouseButtonPressed &&
-      event.mouseButton.button == sf::Mouse::Left &&
+  const auto* pressed = event.getIf<sf::Event::MouseButtonPressed>();
+  const auto* released = event.getIf<sf::Event::MouseButtonReleased>();
+
+  if (pressed && pressed->button == sf::Mouse::Button::Left &&
       m_state.is_hovering_thumb) {
     m_state.is_dragging = true;
-  } else if (event.type == sf::Event::MouseButtonReleased &&
-             event.mouseButton.button == sf::Mouse::Left) {
+  } else if (released && released->button == sf::Mouse::Button::Left) {
     m_state.is_dragging = false;
   }
 
-  if (m_state.is_dragging && event.type == sf::Event::MouseMoved) {
+  if (m_state.is_dragging && event.is<sf::Event::MouseMoved>()) {
     set_scroll_pos(get_scroll_pos_from_mouse(mouse_pos));
   }
 }
@@ -133,7 +135,7 @@ float ScrollBar::get_scroll_pos_from_mouse(
 
 void ScrollBar::mouse_scroll(const sf::Event& event) {
   constexpr float scroll_sensitivity = 150.0f;
-  const float delta = event.mouseWheelScroll.delta;
+  const float delta = event.getIf<sf::Event::MouseWheelScrolled>()->delta;
 
   const float new_pos =
       static_cast<float>(m_state.scroll_pos) - (delta * scroll_sensitivity);
