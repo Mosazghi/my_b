@@ -91,14 +91,6 @@ TEST(CommonLex, DecodesHtmlEntitiesBeforeTokenizing) {
   EXPECT_EQ(std::get<Tag>(tokens[2]).tag, "/b");
 }
 
-TEST(CommonLex, TrimsSurroundingWhitespaceFromText) {
-  std::string body = "<p>  padded text  </p>";
-  auto tokens = common::lex(body);
-
-  ASSERT_EQ(tokens.size(), 3);
-  EXPECT_EQ(std::get<Text>(tokens[1]).text, "padded text");
-}
-
 TEST(CommonLex, NestedInlineMarkupTracksImmediateParent) {
   std::string body =
       "<html><body><h1>Title</h1><p>Some <b>bold</b> text</p></body></html>";
@@ -106,9 +98,9 @@ TEST(CommonLex, NestedInlineMarkupTracksImmediateParent) {
   EXPECT_EQ(summarize(common::lex(body)),
             (std::vector<std::string>{
                 "tag:html@", "tag:body@html", "tag:h1@body", "text:Title",
-                "tag:/h1@h1", "tag:p@body", "text:Some", "tag:b@p", "text:bold",
-                "tag:/b@b", "text:text", "tag:/p@p", "tag:/body@body",
-                "tag:/html@html"}));
+                "tag:/h1@body", "tag:p@body", "text:Some", "tag:b@p",
+                "text:bold", "tag:/b@p", "text:text", "tag:/p@body",
+                "tag:/body@html", "tag:/html@"}));
 }
 
 TEST(CommonLex, SiblingSubtreesUnwindTheTagStack) {

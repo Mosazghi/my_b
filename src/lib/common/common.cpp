@@ -95,7 +95,8 @@ std::vector<layout::Token> lex(std::string& body) {
     if (c == '<') {
       in_tag = true;
       if (!buffer.empty()) {
-        utils::trim(buffer);
+        // fmt::println("{} ", buffer);
+        // utils::trim(buffer);
         result.emplace_back(Text(buffer));
       }
       buffer.clear();
@@ -117,16 +118,17 @@ std::vector<layout::Token> lex(std::string& body) {
       const bool is_void =
           void_tags.count(buffer) > 0 || is_self_closing || is_doctype;
 
+      // if tag is closing itself, remove the opening first before adding
+      // *correct* parent
       const std::string parent = current_parent();
+      if (!buffer.empty() && buffer.length() > 1 &&
+          parent == buffer.substr(1)) {
+        tag_stack.pop_back();
+      }
+
       result.emplace_back(Tag(buffer, rest, parent));
-      if (is_closing) {
-        if (!tag_stack.empty()) {
-          tag_stack.pop_back();
-        }
-      } else {
-        if (!is_void) {
-          tag_stack.push_back(buffer);
-        }
+      if (!is_closing && !is_void) {
+        tag_stack.push_back(buffer);
       }
       buffer.clear();
     } else {
@@ -134,7 +136,7 @@ std::vector<layout::Token> lex(std::string& body) {
     }
   }
   if (!in_tag and !buffer.empty()) {
-    utils::trim(buffer);
+    // utils::trim(buffer);
     result.emplace_back(Text(buffer));
   }
 

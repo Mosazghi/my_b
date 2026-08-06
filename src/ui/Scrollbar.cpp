@@ -81,7 +81,6 @@ void ScrollBar::draw(sf::RenderTarget& target, sf::RenderStates states) const {
 }
 
 void ScrollBar::on_dimension_changed(const ui::ScrollDimensions& dims) {
-  std::cout << "hmm" << std::endl;
   m_state.content_height = dims.content_height;
   m_state.viewport_height = dims.view_height;
   m_state.viewport_width = dims.view_width;
