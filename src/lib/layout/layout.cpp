@@ -2,7 +2,10 @@
 #include <fmt/base.h>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Glyph.hpp>
+#include <SFML/Graphics/Text.hpp>
+#include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <sstream>
 #include "common/common.hpp"
 #include "logger.hpp"
@@ -14,6 +17,7 @@ namespace my_b::layout {
 static void process_word(LayoutContext& ctx, const std::string& word);
 static void process_tag(LayoutContext& ctx, const std::string& tag);
 static void process_token(LayoutContext& ctx, const Token& token);
+static void process_spaces(LayoutContext& ctx, const int num_spaces);
 static void flush_line(LayoutContext& ctx);
 static auto& logger = Logger::getInstance();
 
@@ -21,42 +25,96 @@ static void process_token(LayoutContext& ctx, const Token& token) {
   if (std::holds_alternative<Text>(token)) {
     const auto& text = std::get<Text>(token);
     std::istringstream stream(text.text);
-    std::string word;
+    char ch{};
+    std::string word{};
 
-    while (stream >> word) {
+    const auto prepare_word = [&]() -> void {
       process_word(ctx, word);
+      word.clear();
+    };
+
+    while (stream.get(ch)) {
+      if (ch == ' ') {
+        prepare_word();
+        std::string spaces;
+
+        while (stream.peek() != EOF && std::isspace(stream.peek())) {
+          spaces += stream.get();
+        }
+        if (!spaces.empty() && ctx.has_tag("pre")) {
+          process_spaces(ctx, spaces.length());
+        }
+      } else if (ch == '\n') {
+        bool is_pre_tag = ctx.has_tag("pre");
+        if (is_pre_tag) {
+          prepare_word();
+          flush_line(ctx);
+        }
+      } else {
+        word += ch;
+      }
     }
+    prepare_word();
   } else {
-    auto& tag_token = std::get<Tag>(token);
-    ctx.current_tag = &tag_token;
+    static std::vector<Tag> tags{};
+    Tag tag_token = std::get<Tag>(token);
+    if (tag_token.is_closing()) {
+      tags.pop_back();
+    } else {
+      tags.push_back(tag_token);
+    }
+    ctx.current_tag = tags.back();
     process_tag(ctx, tag_token.tag);
   }
 }
 
+static void process_spaces(LayoutContext& ctx, const int num_spaces) {
+  const auto space_char{" "};
+  auto [text, sf_word] = resource::ResourceManager::get_font(space_char, ctx);
+  for (auto i{0}; i < num_spaces; ++i) {
+    const auto text_width{text.getLocalBounds().size.x};
+    ctx.cursor_x += text_width;
+
+    LayoutElement elem{
+        .type = LayoutElementType::Text,
+        .value = space_char,
+        .tag = *ctx.current_tag,
+    };
+
+    ctx.display_content.emplace_back(ctx.cursor_x, ctx.cursor_y, elem, text);
+  }
+}
+
 static void process_word(LayoutContext& ctx, const std::string& word) {
+  if (word.empty()) {
+    return;
+  }
   if (ctx.current_tag && ctx.current_tag->parent_tag == "head") {
     return;
   }
+
   const bool has_bold = ctx.weight == "bold";
-  const float space_width = ctx.font.getGlyph(' ', ctx.size, has_bold).advance;
+  const float space_width = ctx.font->getGlyph(' ', ctx.size, has_bold).advance;
 
   auto [text, sf_word] = resource::ResourceManager::get_font(word, ctx);
 
   auto word_width = text.getLocalBounds().size.x;
 
   LayoutElement element{.type = LayoutElementType::Text,
+                        .vertical_align = ctx.vertical_align,
                         .value = sf_word,
                         .tag = ctx.current_tag
                                    ? std::make_optional(*ctx.current_tag)
-                                   : std::nullopt,
-                        .vertical_align = ctx.vertical_align};
+                                   : std::nullopt};
 
   if (!sf_word.isEmpty() && common::isEmoji(sf_word[0])) {
     element.type = LayoutElementType::Emoji;
   }
+
   if (ctx.cursor_x + word_width >= ctx.window_width - HSTEP) {
     flush_line(ctx);
   }
+
   if (ctx.line.size() > 0 &&
       std::get<1>(ctx.line.back()).type == LayoutElementType::Emoji) {
     ctx.cursor_x += 8;
@@ -67,10 +125,9 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
     std::string capitalized{text.getString()};
     for (auto& c : capitalized) {
       std::uint32_t style = text.getStyle();
-      sf::Text abbr_text(ctx.font, c, ctx.size);
+      sf::Text abbr_text(*ctx.font, c, ctx.size);
 
       if (std::islower(static_cast<uint8_t>(c))) {
-        fmt::println("{} is lower case", c);
         c = std::toupper(static_cast<uint8_t>(c));
         style |= sf::Text::Bold;
         abbr_text.setCharacterSize(7);
@@ -99,6 +156,21 @@ static void process_tag(LayoutContext& ctx, const std::string& tag) {
        [](LayoutContext& c) {
          flush_line(c);
          c.cursor_y += VSTEP;
+       }},
+      {"pre",
+       [](LayoutContext& c) {
+         auto* courier_font = new sf::Font;
+         if (!courier_font->openFromFile("assets/Courier-New-Regular.ttf")) {
+           logger.err("Error loading font\n");
+         }
+         c.font = courier_font;
+       }},
+      {"/pre",
+       [](LayoutContext& c) {
+         c.font = c.default_font;
+         if (c.line.empty()) {
+           c.cursor_x = HSTEP;
+         }
        }},
       {"small", [](LayoutContext& c) { c.size -= 2; }},
       {"/small", [](LayoutContext& c) { c.size += 2; }},
@@ -148,7 +220,6 @@ static void flush_line(LayoutContext& ctx) {
   std::vector<std::tuple<float, float>> metrics(ctx.line.size());
 
   for (size_t i = 0; i < ctx.line.size(); ++i) {
-    // sfml v2 "way" of propely getting necessary metrics
     const sf::Text& text = std::get<2>(ctx.line[i]);
     const sf::String& word = std::get<1>(ctx.line[i]).value;
     const unsigned int size = text.getCharacterSize();
@@ -157,7 +228,7 @@ static void flush_line(LayoutContext& ctx) {
     float ascent = 0.f;
     float descent = 0.f;
     for (std::size_t k = 0; k < word.getSize(); ++k) {
-      const sf::Glyph& g = ctx.font.getGlyph(word[k], size, bold);
+      const sf::Glyph& g = ctx.font->getGlyph(word[k], size, bold);
       ascent = std::max(ascent, -g.bounds.position.y);
       descent = std::max(descent, g.bounds.position.y + g.bounds.size.y);
     }
@@ -181,6 +252,7 @@ static void flush_line(LayoutContext& ctx) {
     }
     return false;
   }();
+
   const float first_x = std::get<0>(ctx.line.front());
   const float last_x = std::get<0>(ctx.line.back());
   const float last_word_w =
@@ -215,14 +287,16 @@ static void flush_line(LayoutContext& ctx) {
   }
   ctx.cursor_y = baseline + 1.25f * max_descent;
   ctx.cursor_x = HSTEP;
+
   ctx.line.clear();
 }
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
-                                      sf::Font& font, int window_width) {
+                                      sf::Font* font, int window_width) {
   LayoutContext ctx{
       .window_width = window_width,
       .font = font,
+      .default_font = font,
   };
 
   for (const auto& token : tokens) {

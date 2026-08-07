@@ -16,6 +16,15 @@
 using namespace my_b;
 namespace my_b::common {
 
+static void replace_entities(std::string& str) {
+  str = std::regex_replace(str, std::regex("&lt;"), "<");
+  str = std::regex_replace(str, std::regex("&gt;"), ">");
+  str = std::regex_replace(str, std::regex("&amp;"), "&");
+  str = std::regex_replace(str, std::regex("&quot;"), "\"");
+  str = std::regex_replace(str, std::regex("&apos;"), "'");
+  str = std::regex_replace(str, std::regex("&nbsp;"), " ");
+}
+
 #ifdef DEBUG
 void print_token_tree(const std::vector<layout::Token>& tokens) {
   using namespace layout;
@@ -76,12 +85,10 @@ std::vector<layout::Token> lex(std::string& body) {
 
   using namespace layout;
 
-  body = std::regex_replace(body, std::regex("&lt;"), "<");
-  body = std::regex_replace(body, std::regex("&gt;"), ">");
+  replace_entities(body);
 
   std::vector<std::string> tag_stack{};
   static const std::unordered_set<std::string> void_tags = {
-
       "!doctype", "meta", "br", "br/", "img", "hr", "link", "input"};
 
   const auto current_parent = [&]() -> std::string {
@@ -95,7 +102,8 @@ std::vector<layout::Token> lex(std::string& body) {
     if (c == '<') {
       in_tag = true;
       if (!buffer.empty()) {
-        utils::trim(buffer);
+        // fmt::println("{} ", buffer);
+        // utils::trim(buffer);
         result.emplace_back(Text(buffer));
       }
       buffer.clear();
@@ -117,24 +125,25 @@ std::vector<layout::Token> lex(std::string& body) {
       const bool is_void =
           void_tags.count(buffer) > 0 || is_self_closing || is_doctype;
 
+      // if tag is closing itself, remove the opening first before adding
+      // *correct* parent
       const std::string parent = current_parent();
+      if (!buffer.empty() && buffer.length() > 1 &&
+          parent == buffer.substr(1)) {
+        tag_stack.pop_back();
+      }
+
       result.emplace_back(Tag(buffer, rest, parent));
-      if (is_closing) {
-        if (!tag_stack.empty()) {
-          tag_stack.pop_back();
-        }
-      } else {
-        if (!is_void) {
-          tag_stack.push_back(buffer);
-        }
+      if (!is_closing && !is_void) {
+        tag_stack.push_back(buffer);
       }
       buffer.clear();
     } else {
       buffer += c;
     }
   }
-  if (!in_tag and !buffer.empty()) {
-    utils::trim(buffer);
+  if (!in_tag && !buffer.empty()) {
+    // utils::trim(buffer);
     result.emplace_back(Text(buffer));
   }
 

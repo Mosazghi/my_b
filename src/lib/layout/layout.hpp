@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <variant>
 #include <vector>
+#include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/Text.hpp"
 #include "SFML/System/String.hpp"
 namespace my_b::layout {
@@ -39,12 +41,13 @@ struct Tag {
   std::string parent_tag{};
   explicit Tag(std::string t, std::string r, std::string p)
       : tag(std::move(t)), rest(std::move(r)), parent_tag(std::move(p)) {}
+  bool is_closing() const { return !tag.empty() && tag[0] == '/'; }
 };
 struct LayoutElement {
   LayoutElementType type{};
+  VerticalAlign vertical_align{VerticalAlign::Baseline};
   sf::String value{};
   std::optional<Tag> tag{};
-  VerticalAlign vertical_align{VerticalAlign::Baseline};
 };
 
 using Token = std::variant<Text, Tag>;
@@ -60,13 +63,19 @@ struct LayoutContext {
   double cursor_y{VSTEP};
   std::string style{"roman"};
   std::string weight{"normal"};
-  const Tag* current_tag{nullptr};
+  std::optional<Tag> current_tag{std::nullopt};
   VerticalAlign vertical_align{VerticalAlign::Baseline};
-  sf::Font& font;
+  sf::Font* font;
+  sf::Font* default_font;
   std::vector<PositionTextPair> display_content{};
   std::vector<LineElement> line{};
+
+  bool has_tag(std::string_view tag) const {
+    return current_tag &&
+           (current_tag->tag == tag || current_tag->parent_tag == tag);
+  }
 };
 
 std::vector<PositionTextPair> compute(const std::vector<Token>& tokens,
-                                      sf::Font& font, int window_width);
+                                      sf::Font* default_font, int window_width);
 };  // namespace my_b::layout

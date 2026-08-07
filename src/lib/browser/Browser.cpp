@@ -1,6 +1,7 @@
 #include "Browser.hpp"
 #include <fmt/base.h>
 #include <fmt/core.h>
+#include <fmt/format.h>
 #include <openssl/evp.h>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window/Mouse.hpp>
@@ -48,7 +49,7 @@ void Browser::load(const url::URL& url) {
   auto resp = m_loader->load(url);
   m_text_content = common::lex(resp.response.body);
   m_display_content =
-      layout::compute(m_text_content, m_font, m_window.getSize().x);
+      layout::compute(m_text_content, &m_font, m_window.getSize().x);
 }
 
 void Browser::register_event_handlers() {
@@ -162,10 +163,12 @@ void Browser::draw() {
                            IM_COL32(255, 0, 0, 255), 0.0f, 0, 1.5f);
 
         ImGui::SetTooltip(
-            "Text: \"%s\"\nPos: (%.1f, %.1f)\nSize: %.1f x %.1f\nFont size: %i",
+            "Text: \"%s\"\nPos: (%.1f, %.1f)\nSize: %.1f x %.1f\nFont size: "
+            "%i\nTag: %s\nParent Tag: %s",
             text.getString().toAnsiString().c_str(), bounds.position.x,
             bounds.position.y, bounds.size.x, bounds.size.y,
-            text.getCharacterSize());
+            text.getCharacterSize(), element.tag->tag.c_str(),
+            element.tag->parent_tag.c_str());
       }
 #endif
     } else {
@@ -191,7 +194,7 @@ void Browser::draw() {
 
 void Browser::relayout_for_current_window_width() {
   m_display_content =
-      layout::compute(m_text_content, m_font, m_window.getSize().x);
+      layout::compute(m_text_content, &m_font, m_window.getSize().x);
   set_content_height(std::get<1>(m_display_content.back()));
   set_view_height(static_cast<float>(m_window.getSize().y));
   set_view_width(static_cast<float>(m_window.getSize().x));
