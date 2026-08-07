@@ -2,6 +2,8 @@
 #include <fmt/base.h>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Glyph.hpp>
+#include <SFML/Graphics/Text.hpp>
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <sstream>
@@ -70,7 +72,9 @@ static void process_spaces(LayoutContext& ctx, const int num_spaces) {
   const auto space_char{" "};
   auto [text, sf_word] = resource::ResourceManager::get_font(space_char, ctx);
   for (auto i{0}; i < num_spaces; ++i) {
-    ctx.cursor_x += 4;
+    const auto text_width{text.getLocalBounds().size.x};
+    ctx.cursor_x += text_width;
+
     LayoutElement elem{
         .type = LayoutElementType::Text,
         .value = space_char,
@@ -164,7 +168,9 @@ static void process_tag(LayoutContext& ctx, const std::string& tag) {
       {"/pre",
        [](LayoutContext& c) {
          c.font = c.default_font;
-         c.cursor_x = HSTEP;
+         if (c.line.empty()) {
+           c.cursor_x = HSTEP;
+         }
        }},
       {"small", [](LayoutContext& c) { c.size -= 2; }},
       {"/small", [](LayoutContext& c) { c.size += 2; }},

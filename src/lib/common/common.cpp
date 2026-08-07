@@ -16,6 +16,15 @@
 using namespace my_b;
 namespace my_b::common {
 
+static void replace_entities(std::string& str) {
+  str = std::regex_replace(str, std::regex("&lt;"), "<");
+  str = std::regex_replace(str, std::regex("&gt;"), ">");
+  str = std::regex_replace(str, std::regex("&amp;"), "&");
+  str = std::regex_replace(str, std::regex("&quot;"), "\"");
+  str = std::regex_replace(str, std::regex("&apos;"), "'");
+  str = std::regex_replace(str, std::regex("&nbsp;"), " ");
+}
+
 #ifdef DEBUG
 void print_token_tree(const std::vector<layout::Token>& tokens) {
   using namespace layout;
@@ -76,12 +85,10 @@ std::vector<layout::Token> lex(std::string& body) {
 
   using namespace layout;
 
-  body = std::regex_replace(body, std::regex("&lt;"), "<");
-  body = std::regex_replace(body, std::regex("&gt;"), ">");
+  replace_entities(body);
 
   std::vector<std::string> tag_stack{};
   static const std::unordered_set<std::string> void_tags = {
-
       "!doctype", "meta", "br", "br/", "img", "hr", "link", "input"};
 
   const auto current_parent = [&]() -> std::string {
@@ -135,7 +142,7 @@ std::vector<layout::Token> lex(std::string& body) {
       buffer += c;
     }
   }
-  if (!in_tag and !buffer.empty()) {
+  if (!in_tag && !buffer.empty()) {
     // utils::trim(buffer);
     result.emplace_back(Text(buffer));
   }
