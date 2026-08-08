@@ -18,8 +18,32 @@ static void process_word(LayoutContext& ctx, const std::string& word);
 static void process_tag(LayoutContext& ctx, const std::string& tag);
 static void process_token(LayoutContext& ctx, const Token& token);
 static void process_spaces(LayoutContext& ctx, const int num_spaces);
+
 static void flush_line(LayoutContext& ctx);
 static auto& logger = Logger::getInstance();
+
+static void process_abbr(LayoutContext& ctx, sf::String text,
+                         LayoutElement& element, const float space_width) {
+  for (auto& c : text) {
+    std::uint32_t style{};
+    if (c < 128 && std::islower(static_cast<unsigned char>(c))) {
+      c = std::toupper(static_cast<unsigned char>(c));
+      style |= sf::Text::Bold;
+    }
+    const bool is_bold = (style & sf::Text::Bold) != 0;
+
+    sf::Text abbr_text(*ctx.font, c, ctx.size);
+    abbr_text.setFillColor(sf::Color::Black);
+    abbr_text.setStyle(style);
+    const auto bounds = abbr_text.getLocalBounds();
+    abbr_text.setOrigin(bounds.position);
+
+    element.value = abbr_text.getString();
+    ctx.line.emplace_back(ctx.cursor_x, element, abbr_text);
+    ctx.cursor_x += ctx.font->getGlyph(c, ctx.size, is_bold).advance;
+  }
+  ctx.cursor_x += space_width;
+}
 
 static void process_token(LayoutContext& ctx, const Token& token) {
   if (std::holds_alternative<Text>(token)) {
@@ -120,23 +144,10 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
     ctx.cursor_x += 8;
   }
 
-  bool is_abbr = ctx.current_tag && ctx.current_tag->tag == "abbr";
+  bool is_abbr = ctx.has_tag("abbr");
   if (is_abbr) {
-    std::string capitalized{text.getString()};
-    for (auto& c : capitalized) {
-      std::uint32_t style = text.getStyle();
-      sf::Text abbr_text(*ctx.font, c, ctx.size);
-
-      if (std::islower(static_cast<uint8_t>(c))) {
-        c = std::toupper(static_cast<uint8_t>(c));
-        style |= sf::Text::Bold;
-        abbr_text.setCharacterSize(7);
-      }
-
-      abbr_text.setString(c);
-      abbr_text.setStyle(style);
-      ctx.line.emplace_back(ctx.cursor_x, element, abbr_text);
-    }
+    process_abbr(ctx, text.getString(), element, space_width);
+    return;
   }
 
   ctx.line.emplace_back(ctx.cursor_x, element, text);
@@ -184,28 +195,28 @@ static void process_tag(LayoutContext& ctx, const std::string& tag) {
        }},
       {"sup",
        [](LayoutContext& c) {
-         c.size = TextSize::Super;
+         c.size -= 3;
          c.vertical_align = VerticalAlign::Super;
        }},
       {"/sup",
        [](LayoutContext& c) {
-         c.size = TextSize::Normal;
+         c.size += 3;
          c.vertical_align = VerticalAlign::Baseline;
        }},
 
       {"sub",
        [](LayoutContext& c) {
-         c.size = TextSize::Sub;
+         c.size -= 3;
          c.vertical_align = VerticalAlign::Sub;
        }},
       {"/sub",
        [](LayoutContext& c) {
-         c.size = TextSize::Normal;
+         c.size += 3;
          c.vertical_align = VerticalAlign::Baseline;
        }},
 
-      {"abbr", [](LayoutContext& c) { c.size = TextSize::Small; }},
-      {"/abbr", [](LayoutContext& c) { c.size = TextSize::Normal; }},
+      {"abbr", [](LayoutContext& c) { c.size -= 5; }},
+      {"/abbr", [](LayoutContext& c) { c.size += 5; }},
   };
 
   if (const auto it = tag_actions.find(tag); it != tag_actions.end()) {

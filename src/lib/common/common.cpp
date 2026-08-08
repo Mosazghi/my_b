@@ -102,8 +102,6 @@ std::vector<layout::Token> lex(std::string& body) {
     if (c == '<') {
       in_tag = true;
       if (!buffer.empty()) {
-        // fmt::println("{} ", buffer);
-        // utils::trim(buffer);
         result.emplace_back(Text(buffer));
       }
       buffer.clear();
@@ -143,7 +141,6 @@ std::vector<layout::Token> lex(std::string& body) {
     }
   }
   if (!in_tag && !buffer.empty()) {
-    // utils::trim(buffer);
     result.emplace_back(Text(buffer));
   }
 
