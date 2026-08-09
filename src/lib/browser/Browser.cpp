@@ -27,7 +27,7 @@ namespace my_b::browser {
 Browser::Browser(sf::RenderWindow& window)
     : m_running{true},
       m_http_client(std::make_shared<http::HttpClient>()),
-      m_loader(
+      m_resource_loader(
           std::make_unique<loader::ResourceLoader>(std::move(m_http_client))),
       m_window{window},
       m_ui_manager{m_window} {
@@ -40,14 +40,15 @@ Browser::Browser(sf::RenderWindow& window)
   subscribe_to_layout([&](const ui::ScrollDimensions& dims) {
     m_top_scrollbar->on_dimension_changed(dims);
   });
+
   register_event_handlers();
 }
 
 Browser::~Browser() = default;
 
 void Browser::load(const url::URL& url) {
-  auto resp = m_loader->load(url);
-  m_text_content = common::lex(resp.response.body);
+  auto result = m_resource_loader->load(url);
+  m_text_content = common::lex(result.response.body);
   m_display_content =
       layout::compute(m_text_content, &m_font, m_window.getSize().x);
 }
@@ -164,11 +165,11 @@ void Browser::draw() {
 
         ImGui::SetTooltip(
             "Text: \"%s\"\nPos: (%.1f, %.1f)\nSize: %.1f x %.1f\nFont size: "
-            "%i\nTag: %s\nParent Tag: %s",
+            "%i\nFont name: %s\nTag: %s\nParent Tag: %s",
             text.getString().toAnsiString().c_str(), bounds.position.x,
             bounds.position.y, bounds.size.x, bounds.size.y,
-            text.getCharacterSize(), element.tag->tag.c_str(),
-            element.tag->parent_tag.c_str());
+            text.getCharacterSize(), text.getFont().getInfo().family.c_str(),
+            element.tag->tag.c_str(), element.tag->parent_tag.c_str());
       }
 #endif
     } else {

@@ -134,9 +134,71 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
   if (!sf_word.isEmpty() && common::isEmoji(sf_word[0])) {
     element.type = LayoutElementType::Emoji;
   }
+  // if the word is too large, break it piece by piece
+  const auto word_exceeds_screen = [&](const int word_w) {
+    return ctx.cursor_x + word_w >= ctx.window_width - HSTEP;
+  };
+  const auto orignal_text{text.getString()};
+  // if (orignal_text.toAnsiString().find("\xC2\xAD") != std::string::npos) {
+  //   std::string copy = orignal_text.toAnsiString();
+  //   size_t pos;
+  //   while ((pos = copy.find("\xC2\xAD")) != std::string::npos) {
+  //     copy.replace(pos, 2, "");
+  //   }
+  //   orignal_text.fromUtf32(copy.begin(), copy.end());
+  //   logger.dbg("replaced: {}", copy);
+  // }
+  auto has_flushed{false};
 
-  if (ctx.cursor_x + word_width >= ctx.window_width - HSTEP) {
-    flush_line(ctx);
+  if (word_exceeds_screen(word_width)) {
+    int last_soft_hypen_index{-1};
+    // algo:
+    // loop over each character in the word
+    // if current char is a soft hypen, then save the index
+    // if we can render the word UPUNTIL the current hypen, then
+    // - render it
+    // - move the rest onto the next line
+    // done
+    sf::String sf_str{orignal_text};
+    for (size_t i{sf_str.getSize() - 1}; i > 0; --i) {
+      char32_t& c = sf_str[i];
+      if (c == 0xAD) {
+        last_soft_hypen_index = i;
+      }
+      // dont bother
+      if (last_soft_hypen_index == -1) {
+        continue;
+      }
+      // can we render it upuntil it?
+      // if (sf_str.getSize() <= last_soft_hypen_index + 1) {
+      //   continue;
+      // }
+      const auto new_word{sf_str.substring(0, last_soft_hypen_index + 1)};
+      const auto rest_word{sf_str.substring(last_soft_hypen_index + 1)};
+      text.setString(new_word);
+      const auto new_width{text.getLocalBounds().size.x};
+      if (!word_exceeds_screen(new_width)) {
+        word_width = new_width;
+        element.value = new_word;
+        logger.warn("word fits! {}::{}", text.getString().toAnsiString(),
+                    last_soft_hypen_index);
+        has_flushed = true;
+        ctx.line.emplace_back(ctx.cursor_x, element, text);
+        flush_line(ctx);
+        element.value = rest_word;
+        text.setString(rest_word);
+        ctx.line.emplace_back(ctx.cursor_x, element, text);
+        word_width = text.getLocalBounds().size.x;
+        ctx.cursor_x += text.getLocalBounds().size.x + space_width;
+        break;
+      }
+    }
+
+    text.setString(orignal_text);
+    //
+    if (!has_flushed) {
+      flush_line(ctx);
+    }
   }
 
   if (ctx.line.size() > 0 &&
@@ -150,8 +212,12 @@ static void process_word(LayoutContext& ctx, const std::string& word) {
     return;
   }
 
-  ctx.line.emplace_back(ctx.cursor_x, element, text);
-  ctx.cursor_x += word_width + space_width;
+  logger.dbg("hmm");
+  if (!has_flushed) {
+    logger.dbg("hmm2 {}, ", text.getString().toAnsiString().c_str());
+    ctx.line.emplace_back(ctx.cursor_x, element, text);
+    ctx.cursor_x += word_width + space_width;
+  }
 }
 
 static void process_tag(LayoutContext& ctx, const std::string& tag) {

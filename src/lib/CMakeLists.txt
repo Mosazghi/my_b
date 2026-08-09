@@ -14,6 +14,7 @@ FetchContent_Declare(
      imgui
      GIT_REPOSITORY https://github.com/ocornut/imgui.git
      GIT_TAG v1.91.9
+     GIT_SHALLOW TRUE
  )
 FetchContent_MakeAvailable(imgui)
 
@@ -21,7 +22,7 @@ FetchContent_Declare(
      imgui-sfml
      GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
      GIT_TAG v3.0
-     UPDATE_DISCONNECTED 1
+     GIT_SHALLOW TRUE
  )
 set(IMGUI_DIR ${imgui_SOURCE_DIR} CACHE PATH "" FORCE)
 set(IMGUI_SFML_FIND_SFML OFF CACHE BOOL "" FORCE)

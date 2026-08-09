@@ -23,6 +23,7 @@ static void replace_entities(std::string& str) {
   str = std::regex_replace(str, std::regex("&quot;"), "\"");
   str = std::regex_replace(str, std::regex("&apos;"), "'");
   str = std::regex_replace(str, std::regex("&nbsp;"), " ");
+  str = std::regex_replace(str, std::regex("&shy;"), "\u00AD");
 }
 
 #ifdef DEBUG

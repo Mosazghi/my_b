@@ -49,7 +49,7 @@ class Browser : public ui::ScrollBarContainer {
   std::vector<layout::Token> m_text_content;
   sf::Font m_font;
   std::shared_ptr<http::IHttpClient> m_http_client{};
-  std::unique_ptr<loader::ResourceLoader> m_loader;
+  std::unique_ptr<loader::ResourceLoader> m_resource_loader;
   sf::RenderWindow& m_window;
   ui::UiManager m_ui_manager;
   ui::ScrollBar* m_top_scrollbar{};
